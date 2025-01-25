@@ -1,0 +1,901 @@
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--day-border);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #999;
+}
+
+/* Global Styles */
+body {
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  height: 100vh;
+  overflow: hidden;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
+}
+
+:root {
+  --bg-color: #fafafa;
+  --text-color: #000000;
+  --day-border: #eee;
+  --inbox-bg-light: #f0f0f0;
+  --inbox-border: #f5f5f5;
+  --event-text: #000000;
+  --delete-color: #aaa;
+  --input-border: #f0f0f0;
+  --input-focus-border: #007bff;
+  --drag-opacity: 0.7;
+  --drag-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  --highlight-text-color: #007bff;
+  --dim-text-color: #888;
+
+  /* Light Theme Task Colors */
+  --task-color-blue-light: #e0f7fa;
+  --task-color-green-light: #e8f5e9;
+  --task-color-yellow-light: #fffde7;
+  --task-color-pink-light: #fce4ec;
+  --task-color-orange-light: #ffe0b2;
+
+  /* Task Border Color */
+  --task-border-color: #ccc;
+}
+
+body.dark-theme {
+  --bg-color: #121212;
+  --text-color: #ffffff;
+  --day-border: #333;
+  --inbox-bg-dark: #222;
+  --inbox-border: #0a0a0a;
+  --event-text: #eee;
+  --delete-color: #888;
+  --input-border: #0a0a0a;
+  --input-focus-border: #66a3ff;
+  --drag-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  --highlight-text-color: #66a3ff;
+  --dim-text-color: #aaa;
+
+  /* Dark Theme Task Colors */
+  --task-color-blue-dark: #000b1f;
+  --task-color-green-dark: #001f1f;
+  --task-color-yellow-dark: #1f1f1f;
+  --task-color-pink-dark: #2a1f2a;
+  --task-color-orange-dark: #1f1f0a;
+
+  /* Task Border Color */
+  --task-border-color: #444;
+}
+
+/* Popup Borders */
+.task-details-popup,
+.settings-popup {
+  border: 1px solid var(--task-border-color) !important;
+}
+
+.task-details-popup h2,
+.settings-popup h3 {
+  border-bottom: 1px solid var(--task-border-color) !important;
+}
+
+.task-details-popup textarea,
+.task-details-popup input[type="color"],
+.color-swatches .color-swatch {
+  border: 1px solid var(--task-border-color) !important;
+}
+
+/* Calendar Container */
+.calendar-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Calendar Header */
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px;
+  flex-shrink: 0;
+}
+
+.calendar-navigation {
+  display: flex;
+  align-items: center;
+}
+
+.nav-button {
+  padding: 8px 12px;
+  margin: 0 5px;
+  cursor: pointer;
+  background-color: transparent;
+  color: var(--text-color);
+  border: none;
+  font-size: 1.2em;
+}
+
+.settings-button {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 1.2em;
+  cursor: pointer;
+  margin-left: 10px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-button i {
+  pointer-events: none;
+}
+
+.language-select {
+  padding: 8px;
+  margin-left: 0;
+  border: 1px solid var(--text-color);
+  background-color: transparent;
+  color: var(--text-color);
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+}
+
+.language-select option {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+/* Calendar Grid */
+.calendar {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.calendar-row {
+  display: flex;
+  width: 100%;
+  height: 50%;
+}
+
+.day,
+.inbox {
+  border: 1px solid var(--day-border);
+  padding: 15px;
+  box-sizing: border-box;
+  position: relative;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  width: 0;
+  max-height: 100%;
+}
+
+.inbox {
+  background-color: var(--inbox-bg-light);
+}
+
+body.dark-theme .inbox {
+  background-color: var(--inbox-bg-dark);
+}
+
+.day-header,
+.inbox-header {
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-shrink: 0;
+  padding: 8px;
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-color);
+  z-index: 1;
+}
+
+.day-header.today-highlight {
+  color: var(--highlight-text-color);
+}
+
+.month-name {
+  font-size: 1em;
+  font-weight: bold;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  color: var(--dim-text-color);
+}
+
+.year {
+  font-size: 1em;
+  font-weight: normal;
+  color: var(--dim-text-color);
+}
+
+.month-name .month {
+  cursor: pointer;
+}
+
+.month-name .month.inactive-highlight {
+  color: var(--highlight-text-color);
+}
+
+.day-number {
+  font-size: 1.2em;
+}
+
+.day-weekday {
+  font-size: 1em;
+}
+
+.event {
+  color: var(--event-text);
+  padding: 8px;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  word-break: break-word;
+  cursor: grab;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--task-border-color);
+  background-color: transparent;
+}
+
+.event[data-task-color="blue"] {
+  background-color: var(--task-color-blue-light);
+}
+body.dark-theme .event[data-task-color="blue"] {
+  background-color: var(--task-color-blue-dark);
+}
+
+.event[data-task-color="green"] {
+  background-color: var(--task-color-green-light);
+}
+body.dark-theme .event[data-task-color="green"] {
+  background-color: var(--task-color-green-dark);
+}
+
+.event[data-task-color="yellow"] {
+  background-color: var(--task-color-yellow-light);
+}
+body.dark-theme .event[data-task-color="yellow"] {
+  background-color: var(--task-color-yellow-dark);
+}
+
+.event[data-task-color="pink"] {
+  background-color: var(--task-color-pink-light);
+}
+body.dark-theme .event[data-task-color="pink"] {
+  background-color: var(--task-color-pink-dark);
+}
+
+.event[data-task-color="orange"] {
+  background-color: var(--task-color-orange-light);
+}
+body.dark-theme .event[data-task-color="orange"] {
+  background-color: var(--task-color-orange-dark);
+}
+
+.event:active {
+  cursor: grabbing;
+}
+
+.event.dragging {
+  opacity: var(--drag-opacity);
+  box-shadow: var(--drag-shadow);
+}
+
+.event-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.task-text {
+  flex-grow: 1;
+  overflow-wrap: break-word;
+}
+
+.task-text.completed {
+  text-decoration: line-through;
+  color: var(--dim-text-color);
+}
+
+.description-icon {
+  font-size: 0.9em;
+  opacity: 0.8;
+  transition: opacity 0.2s ease-in-out;
+  color: var(--dim-text-color);
+  margin-left: 8px;
+}
+
+.description-icon:hover {
+  opacity: 1;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.action-buttons.right {
+  margin-left: auto;
+}
+
+.action-buttons.left {
+  margin-right: auto;
+}
+
+.done-button,
+.undone-button,
+.delete-button {
+  background: none;
+  border: none;
+  font-size: 1em;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  color: var(--text-color);
+  transition: opacity 0.2s ease-in-out;
+}
+
+.delete-button {
+  opacity: 0;
+}
+
+.event:hover .delete-button {
+  opacity: 1;
+}
+
+.done-button i {
+  color: grey;
+}
+
+.undone-button i {
+  color: grey;
+}
+
+.delete-button i {
+  color: var(--delete-color);
+}
+
+.new-task-form {
+  margin-top: 5px;
+  flex-shrink: 0;
+  padding: 2px;
+  box-sizing: border-box;
+}
+
+.new-task-form input[type="text"] {
+  width: calc(100% - 16px);
+  padding: 8px;
+  border: none;
+  box-sizing: border-box;
+  background-color: transparent;
+  color: var(--text-color);
+  outline: none;
+}
+
+.new-task-form input[type="text"]:focus {
+  border: 1px solid var(--input-focus-border);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.inbox-header {
+  text-align: left;
+  font-weight: bold;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+/* Settings Popup */
+.settings-popup {
+  position: absolute;
+  top: 60px;
+  right: 20px;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  border: 1px solid var(--task-border-color);
+  padding: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+  display: none;
+  width: 250px;
+}
+
+.settings-popup h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  border-bottom: 1px solid var(--task-border-color);
+  padding-bottom: 10px;
+}
+
+.settings-option {
+  margin-bottom: 15px;
+}
+
+.settings-option label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.settings-option select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--task-border-color);
+  box-sizing: border-box;
+  background-color: transparent;
+  color: var(--text-color);
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+}
+
+.settings-option select:focus {
+  border: 1px solid var(--input-focus-border);
+  outline: none;
+}
+
+@media (max-width: 768px) {
+  .calendar-container {
+    height: auto;
+  }
+  .calendar {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .calendar-row {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .day,
+  .inbox {
+    width: 100%;
+    margin-bottom: 10px;
+    overflow-y: auto;
+    max-height: none;
+  }
+
+  .settings-popup {
+    top: 50px;
+    right: 10px;
+  }
+}
+
+/* Task Details Popup */
+.task-details-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  display: none;
+}
+
+.task-details-popup {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  width: 80%;
+  max-width: 500px;
+  position: relative;
+  border: 1px solid var(--task-border-color);
+}
+
+.task-details-popup h2 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  border-bottom: 1px solid var(--task-border-color);
+  padding-bottom: 10px;
+}
+
+.task-details-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.task-details-date {
+  padding: 8px;
+  border: 1px solid var(--task-border-color);
+  border-radius: 4px;
+  background-color: transparent;
+  color: var(--text-color);
+  cursor: pointer; /* Make it look clickable */
+  position: relative; /* For calendar positioning */
+}
+
+.task-details-date:focus {
+  outline: none; /* Remove default focus outline */
+  border: 1px solid var(--input-focus-border);
+}
+
+.task-details-date-icon {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  pointer-events: none; /* Make sure the icon doesn't interfere with clicks */
+  color: var(--dim-text-color);
+}
+
+.task-details-popup-content {
+  margin-bottom: 15px;
+}
+
+.task-details-popup label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.task-details-popup input[type="color"],
+.task-details-popup textarea {
+  width: calc(100% - 16px);
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid var(--task-border-color);
+  border-radius: 4px;
+  background-color: transparent;
+  color: var(--text-color);
+  box-sizing: border-box;
+}
+
+.task-details-popup textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.task-details-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.task-details-actions button.reset-color-btn {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 1em;
+  cursor: pointer;
+  padding: 8px;
+  opacity: 0.6;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.task-details-actions button i {
+  font-size: 1.2em;
+}
+
+.close-popup-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 1.2em;
+  cursor: pointer;
+}
+
+/* Visible Delete Button in Popup */
+.task-details-popup .delete-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background-color 0.2s ease-in-out;
+  opacity: 1 !important;
+}
+
+.task-details-popup .delete-button:hover {
+  background-color: #c82333;
+}
+
+.task-details-popup .delete-button i {
+  color: white !important;
+  margin-right: 5px;
+}
+
+/* Other Specific Styles */
+.inbox-title-input {
+  width: auto;
+  max-width: calc(100% - 18px);
+  padding: 8px;
+  border: none;
+  box-sizing: border-box;
+  background-color: transparent;
+  color: var(--text-color);
+  font-size: 1em;
+  outline: none;
+  text-align: left;
+  font-weight: bold;
+  flex-grow: 0;
+  white-space: nowrap;
+}
+
+.task-title-input {
+  width: 100%;
+  padding: 8px;
+  border: none;
+  box-sizing: border-box;
+  background-color: transparent;
+  color: var(--text-color);
+  font-size: 1.2em;
+  outline: none;
+  font-weight: bold;
+}
+
+.task-title-input:focus {
+  border: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.task-details-popup textarea:focus {
+  border: 1px solid var(--input-focus-border);
+  outline: none;
+}
+
+.color-swatches {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.color-swatch {
+  border: 1px solid var(--task-border-color);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  position: relative;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: transparent;
+}
+
+.color-swatch::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  z-index: -1;
+  border: none;
+  background: inherit;
+}
+
+.color-swatch i {
+  position: static; /* Change to static to respect flex centering */
+  transform: none; /* Remove transform to respect flex centering */
+  font-size: 1em;
+  color: var(--dim-text-color);
+}
+
+.color-swatch.selected-color::after {
+  border: 2px solid var(--input-focus-border);
+}
+
+.color-swatch:focus {
+  outline: none;
+}
+
+.search-button {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 1.2em;
+  cursor: pointer;
+  margin-left: 10px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-button i {
+  pointer-events: none;
+}
+
+.fuzzy-search-popup {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  border: 1px solid var(--task-border-color);
+  padding: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+  display: none;
+  width: 300px;
+}
+
+.fuzzy-search-popup input {
+  width: calc(100% - 20px);
+  padding: 8px;
+  border: 1px solid var(--task-border-color);
+  border-radius: 4px;
+  margin-bottom: 10px;
+  background-color: transparent;
+  color: var(--text-color);
+  box-sizing: border-box;
+}
+
+.fuzzy-search-popup input:focus {
+  border: 1px solid var(--input-focus-border);
+  outline: none;
+}
+
+.fuzzy-search-popup ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.fuzzy-search-popup li {
+  padding: 8px;
+  border-bottom: 1px solid var(--task-border-color);
+  cursor: pointer;
+}
+
+.fuzzy-search-popup li:last-child {
+  border-bottom: none;
+}
+
+.fuzzy-search-popup li:hover {
+  background-color: var(--inbox-bg-light);
+}
+
+body.dark-theme .fuzzy-search-popup li:hover {
+  background-color: var(--inbox-bg-dark);
+}
+
+.fuzzy-search-task-title {
+  font-weight: bold;
+}
+
+.fuzzy-search-task-date {
+  font-size: 0.9em;
+  color: var(--dim-text-color);
+}
+
+/* Custom Date Picker Styles */
+.date-picker-container {
+  position: absolute;
+  /* Position below the date input - corrected to be below and to the right */
+  top: auto;
+  bottom: 0;
+  left: auto;
+  right: 0;
+  z-index: 1100; /* Higher than task details popup */
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  border: 1px solid var(--task-border-color);
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  display: none; /* Hidden by default */
+}
+
+.date-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  border-bottom: 1px solid var(--task-border-color);
+}
+
+.date-picker-month-year {
+  font-weight: bold;
+}
+
+.date-picker-nav-button {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.date-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.date-picker-day-name,
+.date-picker-day {
+  padding: 8px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.date-picker-day-name {
+  font-weight: bold;
+  color: var(--dim-text-color);
+}
+
+.date-picker-day {
+  position: relative; /* For highlighting current day */
+  padding: 8px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.date-picker-day.current-day::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  bottom: 2px;
+  left: 2px;
+  background-color: var(--highlight-text-color); /* Highlight color */
+  opacity: 0.2; /* Adjust opacity as needed */
+  border-radius: 4px; /* Match day border radius */
+  z-index: -1; /* Behind the text */
+}
+
+.date-picker-day:hover,
+.date-picker-day.selected {
+  background-color: var(--inbox-bg-light);
+}
+
+body.dark-theme .date-picker-day:hover,
+body.dark-theme .date-picker-day.selected {
+  background-color: var(--inbox-bg-dark);
+}
+
+.date-picker-day.inactive {
+  color: var(--dim-text-color);
+  cursor: default;
+}
+
+.date-picker-day.inactive:hover {
+  background-color: transparent;
+}

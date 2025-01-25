@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Week Planner</title>
+    <script src="https://cdn.jsdelivr.net/npm/fuzzysort@2.0.4/fuzzysort.min.js"></script>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📅</text></svg>"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+      integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="calendar-container">
+      <!-- Calendar Header -->
+      <div class="calendar-header">
+        <div class="month-name">
+          <span class="month">Month</span>
+          <span class="year">Year</span>
+        </div>
+        <div class="calendar-navigation">
+          <button id="search-btn" class="search-button" title="Search Tasks">
+            <i class="fas fa-search"></i>
+          </button>
+          <button id="settings-btn" class="settings-button" title="Settings">
+            <i class="fas fa-cog"></i>
+          </button>
+          <button id="prev-week" class="nav-button" title="Previous Week">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <button id="next-week" class="nav-button" title="Next Week">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+        <!-- Settings Popup -->
+        <div id="settings-popup" class="settings-popup">
+          <h3>Settings</h3>
+          <div class="settings-option">
+            <label for="theme-select">Theme</label>
+            <select id="theme-select" class="language-select">
+              <option value="auto">Auto</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </div>
+          <div class="settings-option">
+            <label for="language-select-popup">Language</label>
+            <select id="language-select-popup" class="language-select">
+              <option value="en">🇺🇸 English</option>
+              <option value="ru">🇷🇺 Русский</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <!-- Fuzzy Search Popup -->
+      <div id="fuzzy-search-popup" class="fuzzy-search-popup">
+        <input
+          autocomplete="off"
+          type="text"
+          id="fuzzy-search-input"
+          placeholder="Search tasks..."
+        />
+        <ul id="fuzzy-search-results"></ul>
+      </div>
+      <!-- Calendar Grid -->
+      <div class="calendar">
+        <!-- Row 1: Inbox + Monday to Wednesday -->
+        <div class="calendar-row" id="row1">
+          <div id="inbox" class="inbox">
+            <div class="inbox-header">📦 Inbox</div>
+          </div>
+          <div id="monday" class="day">
+            <div class="day-header">
+              <span class="day-number">1</span>
+              <span class="day-weekday">Monday</span>
+            </div>
+          </div>
+          <div id="tuesday" class="day">
+            <div class="day-header">
+              <span class="day-number">2</span>
+              <span class="day-weekday">Tuesday</span>
+            </div>
+          </div>
+          <div id="wednesday" class="day">
+            <div class="day-header">
+              <span class="day-number">3</span>
+              <span class="day-weekday">Wednesday</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 2: Thursday to Sunday -->
+        <div class="calendar-row" id="row2">
+          <div id="thursday" class="day">
+            <div class="day-header">
+              <span class="day-number">4</span>
+              <span class="day-weekday">Thursday</span>
+            </div>
+          </div>
+          <div id="friday" class="day">
+            <div class="day-header">
+              <span class="day-number">5</span>
+              <span class="day-weekday">Friday</span>
+            </div>
+          </div>
+          <div id="saturday" class="day">
+            <div class="day-header">
+              <span class="day-number">6</span>
+              <span class="day-weekday">Saturday</span>
+            </div>
+          </div>
+          <div id="sunday" class="day">
+            <div class="day-header">
+              <span class="day-number">7</span>
+              <span class="day-weekday">Sunday</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Task Details Popup -->
+    <div id="task-details-popup-overlay" class="task-details-popup-overlay">
+      <div id="task-details-popup" class="task-details-popup">
+        <button
+          id="close-task-details-popup"
+          class="close-popup-btn"
+          title="Close"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+        <h2 id="task-details-title">Task Title</h2>
+        <div class="task-details-header">
+          <div class="task-details-date" id="task-details-date" tabindex="0">
+            Pick a date
+            <i class="fas fa-calendar-alt task-details-date-icon"></i>
+          </div>
+          <div class="color-swatches">
+            <button
+              class="color-swatch"
+              data-color="no-color"
+              title="Reset Color"
+            >
+              <i class="fas fa-ban"></i>
+            </button>
+            <button
+              class="color-swatch"
+              data-color="blue"
+              style="background-color: var(--task-color-blue-light)"
+              title="Blue"
+            ></button>
+            <button
+              class="color-swatch"
+              data-color="green"
+              style="background-color: var(--task-color-green-light)"
+              title="Green"
+            ></button>
+            <button
+              class="color-swatch"
+              data-color="yellow"
+              style="background-color: var(--task-color-yellow-light)"
+              title="Yellow"
+            ></button>
+            <button
+              class="color-swatch"
+              data-color="pink"
+              style="background-color: var(--task-color-pink-light)"
+              title="Pink"
+            ></button>
+            <button
+              class="color-swatch"
+              data-color="orange"
+              style="background-color: var(--task-color-orange-light)"
+              title="Orange"
+            ></button>
+          </div>
+          <button
+            id="delete-task-details"
+            class="delete-button"
+            title="Delete Task"
+          >
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        </div>
+        <div class="task-details-popup-content">
+          <label for="task-description">Description:</label>
+          <textarea id="task-description" name="task-description"></textarea>
+        </div>
+        <!-- Date Picker Container -->
+        <div id="date-picker-container" class="date-picker-container">
+          <div class="date-picker-header">
+            <button
+              class="date-picker-nav-button"
+              id="date-picker-prev-month"
+              title="Previous Month"
+            >
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <span
+              class="date-picker-month-year"
+              id="date-picker-month-year"
+            ></span>
+            <button
+              class="date-picker-nav-button"
+              id="date-picker-next-month"
+              title="Next Month"
+            >
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+          <div class="date-picker-grid" id="date-picker-grid">
+            <!-- Day names and days will be rendered here by JavaScript -->
+          </div>
+          <div class="date-picker-actions">
+            <button
+              class="date-picker-reset-date"
+              id="date-picker-reset-date"
+            ></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+      document
+        .getElementById("task-details-popup-overlay")
+        .addEventListener("transitionend", () => {
+          if (
+            document.getElementById("task-details-popup-overlay").style
+              .display === "flex"
+          ) {
+            document
+              .getElementById("task-details-popup-overlay")
+              .dispatchEvent(new CustomEvent("show.popup"));
+          } else {
+            document
+              .getElementById("task-details-popup-overlay")
+              .dispatchEvent(new CustomEvent("hide.popup"));
+          }
+        });
+    </script>
+  </body>
+</html>
