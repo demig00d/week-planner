@@ -4,21 +4,23 @@ GO_BUILD_TAGS=sqlite_fts5
 
 PLATFORMS = linux/amd64 linux/arm64 windows/amd64 windows/386 darwin/amd64 darwin/arm64
 
+BUILD_TARGETS = $(foreach p, $(PLATFORMS), $(BUILD_DIR)/$(APP_NAME)-$(subst /,-,$(p)))
+
 all: build-all
 
-build-all: $(BUILD_DIR) $(patsubst %/%, build-%, $(PLATFORMS))
+build-all: $(BUILD_DIR) $(BUILD_TARGETS)
 
 $(BUILD_DIR):
 	mkdir -p $@
 
-build-%: $(BUILD_DIR)
+$(BUILD_DIR)/$(APP_NAME)-%: $(BUILD_DIR)
 	@platform=$* && \
-	os=$$(echo $$platform | cut -d'/' -f1) && \
-	arch=$$(echo $$platform | cut -d'/' -f2) && \
-	output_name=$(BUILD_DIR)/$(APP_NAME)-$$os-$$arch && \
-	if [ "$$os" = "windows" ]; then output_name=$$output_name.exe; fi && \
-	echo "Building for $$platform..." && \
-	GOOS=$$os GOARCH=$$arch go build -tags $(GO_BUILD_TAGS) -o $$output_name ./cmd/$(APP_NAME)/main.go && \
+	os=$$(echo $$platform | cut -d'-' -f1) && \
+	arch=$$(echo $$platform | cut -d'-' -f2) && \
+	output_name="$@" && \
+	if [ "$$os" = "windows" ]; then output_name="$$output_name.exe"; fi && \
+	echo "Building for $$os/$$arch..." && \
+	GOOS=$$os GOARCH=$$arch go build -tags $(GO_BUILD_TAGS) -o "$$output_name" ./cmd/$(APP_NAME)/main.go && \
 	echo "Built: $$output_name"
 
 clean:
@@ -30,4 +32,4 @@ run: build-local
 build-local: $(BUILD_DIR)
 	go build -tags $(GO_BUILD_TAGS) -o $(BUILD_DIR)/$(APP_NAME)-local ./cmd/$(APP_NAME)/main.go
 
-.PHONY: all build-all clean run build-local $(patsubst %/%, build-%, $(PLATFORMS))
+.PHONY: all build-all clean run build-local
