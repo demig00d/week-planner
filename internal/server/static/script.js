@@ -77,15 +77,6 @@ const translations = {
       "November",
       "December",
     ],
-    dayNames: [
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-      "Sunday",
-    ],
     dayNamesShort: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
     inbox: "📦 Inbox",
     newTask: "New task...",
@@ -116,15 +107,6 @@ const translations = {
       "Октябрь",
       "Ноябрь",
       "Декабрь",
-    ],
-    dayNames: [
-      "Понедельник",
-      "Вторник",
-      "Среда",
-      "Четверг",
-      "Пятница",
-      "Суббота",
-      "Воскресенье",
     ],
     dayNamesShort: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"],
     inbox: "📦 Инбокс",
@@ -501,7 +483,8 @@ async function renderCalendarWeek(date) {
     if (isThisCurrentWeek && date.toDateString() === today.toDateString()) {
       dayHeaderDiv.classList.add("today-highlight");
     }
-    const weekdayName = translations[lang].dayNames[(date.getDay() + 6) % 7];
+    const weekdayName =
+      translations[lang].dayNamesShort[(date.getDay() + 6) % 7];
     dayHeaderDiv.innerHTML = `<span class="day-number">${date.getDate()}</span><span class="day-weekday">${weekdayName}</span>`;
     dayDiv.appendChild(dayHeaderDiv);
 
