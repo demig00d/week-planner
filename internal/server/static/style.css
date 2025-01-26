@@ -241,7 +241,7 @@ body.dark-theme .inbox {
 
 .month-name.inactive-highlight {
   color: var(--highlight-text-color);
-  cursor: pointer; /* Change cursor to pointer to indicate clickability */
+  cursor: pointer;
 }
 
 .day-number {
@@ -330,6 +330,18 @@ body.dark-theme .event[data-task-color="orange"] {
 .task-text.completed {
   text-decoration: line-through;
   color: var(--dim-text-color);
+}
+
+.task-text.no-wrap {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-text.wrap {
+  white-space: normal; /* or 'pre-wrap' if you want to preserve line breaks in the title */
+  overflow-wrap: break-word; /* or 'word-wrap: break-word;' for older browsers */
+  text-overflow: clip; /* or 'text-overflow: visible;' if you prefer to just clip */
 }
 
 .description-icon {
@@ -432,7 +444,7 @@ body.dark-theme .event[data-task-color="orange"] {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   z-index: 10;
   display: none;
-  width: 250px;
+  width: 500px; /* Wider settings popup to accommodate columns */
 }
 
 .settings-popup h3 {
@@ -440,6 +452,15 @@ body.dark-theme .event[data-task-color="orange"] {
   margin-bottom: 15px;
   border-bottom: 1px solid var(--task-border-color);
   padding-bottom: 10px;
+}
+
+.settings-columns-container {
+  display: flex;
+  gap: 20px; /* Gap between columns */
+}
+
+.settings-column {
+  flex: 1; /* Equal width columns */
 }
 
 .settings-option {
@@ -470,7 +491,79 @@ body.dark-theme .event[data-task-color="orange"] {
   outline: none;
 }
 
+.settings-options-header {
+  font-weight: bold;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.display-checkbox label.styled-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: normal; /* Resetting from .settings-option label */
+  margin-bottom: 0; /* Resetting from .settings-option label */
+  position: relative; /* Add position relative to the label */
+  padding-left: 30px; /* Add padding to the left to make space for the custom checkbox */
+  -webkit-user-select: none; /* Disable text selection on label */
+  -moz-user-select: none; /* For Firefox */
+  -ms-user-select: none; /* For IE/Edge */
+  user-select: none; /* Standard syntax */
+  min-height: 20px;
+}
+
+.display-checkbox label.styled-checkbox input[type="checkbox"] {
+  opacity: 0;
+  position: absolute;
+  left: -9999px; /* Move input off-screen to the left */
+  top: 0;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.display-checkbox label.styled-checkbox::before {
+  content: "";
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--day-border);
+  border-radius: 50%; /* Make it round */
+  background-color: transparent;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+  position: absolute; /* Position the custom checkbox indicator */
+  left: 0; /* Align to the left of the label */
+  top: 50%;
+  transform: translateY(-50%);
+  box-sizing: border-box; /* Ensure padding and border are included in the element's total width and height */
+}
+
+.display-checkbox label.styled-checkbox.checked::before {
+  background-color: #bbb; /* Grey background when checked */
+  border-color: #bbb; /* Grey border when checked */
+}
+
+.display-checkbox label.styled-checkbox.checked::after {
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  content: "\f00c"; /* fa-check */
+  position: absolute;
+  top: 50%;
+  left: 4px; /* Adjusted for better icon centering */
+  transform: translateY(-50%);
+  color: var(--bg-color); /* Keep checkmark color white or adjust if needed */
+  font-size: 12px; /* Slightly smaller icon */
+  z-index: 1;
+}
+
 @media (max-width: 768px) {
+  body {
+    height: auto;
+    overflow: visible;
+  }
   .calendar-container {
     height: auto;
   }
@@ -495,6 +588,15 @@ body.dark-theme .event[data-task-color="orange"] {
   .settings-popup {
     top: 50px;
     right: 10px;
+    width: 90%; /* Wider settings popup for mobile */
+    max-width: 500px;
+  }
+  .settings-columns-container {
+    flex-direction: column; /* Stack columns on smaller screens */
+    gap: 0; /* Remove gap between stacked columns */
+  }
+  .settings-column {
+    margin-bottom: 20px; /* Add margin between stacked columns */
   }
 }
 
@@ -720,8 +822,8 @@ body.dark-theme .event[data-task-color="orange"] {
 }
 
 .color-swatch i {
-  position: static; /* Change to static to respect flex centering */
-  transform: none; /* Remove transform to respect flex centering */
+  position: static;
+  transform: none;
   font-size: 1em;
   color: var(--dim-text-color);
 }
@@ -818,10 +920,8 @@ body.dark-theme .fuzzy-search-popup li:hover {
 /* Custom Date Picker Styles */
 .date-picker-container {
   position: absolute;
-  /* Position below the date input - corrected to be below and to the right */
   top: auto;
   bottom: 0;
-  left: auto;
   right: 0;
   z-index: 1100; /* Higher than task details popup */
   background-color: var(--bg-color);
@@ -870,7 +970,7 @@ body.dark-theme .fuzzy-search-popup li:hover {
 }
 
 .date-picker-day {
-  position: relative; /* For highlighting current day */
+  position: relative;
   padding: 8px;
   text-align: center;
   cursor: pointer;
@@ -883,10 +983,10 @@ body.dark-theme .fuzzy-search-popup li:hover {
   right: 2px;
   bottom: 2px;
   left: 2px;
-  background-color: var(--highlight-text-color); /* Highlight color */
-  opacity: 0.2; /* Adjust opacity as needed */
-  border-radius: 4px; /* Match day border radius */
-  z-index: -1; /* Behind the text */
+  background-color: var(--highlight-text-color);
+  opacity: 0.2;
+  border-radius: 4px;
+  z-index: -1;
 }
 
 .date-picker-day:hover,

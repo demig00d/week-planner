@@ -9,6 +9,10 @@ const settingsBtn = document.getElementById("settings-btn");
 const settingsPopup = document.getElementById("settings-popup");
 const themeSelect = document.getElementById("theme-select");
 const languageSelect = document.getElementById("language-select-popup");
+const fullWeekdaysCheckbox = document.getElementById("full-weekdays-checkbox");
+const wrapTaskTitlesCheckbox = document.getElementById(
+  "wrap-task-titles-checkbox",
+);
 const inboxDiv = document.getElementById("inbox");
 const dayIds = [
   "monday",
@@ -44,6 +48,14 @@ let currentTheme = "light";
 let inboxHeaderElement = null;
 let inboxInputElement = null;
 let isEditingInboxTitle = false;
+let displayFullWeekdays = localStorage.getItem("fullWeekdays") === "true";
+let wrapTaskTitles = localStorage.getItem("wrapTaskTitles") !== "false";
+// Set wrapTaskTitles to true by default
+if (localStorage.getItem("wrapTaskTitles") === null) {
+  wrapTaskTitles = true;
+} else {
+  wrapTaskTitles = localStorage.getItem("wrapTaskTitles") !== "false";
+}
 
 // Fuzzy Search Variables
 const searchBtn = document.getElementById("search-btn");
@@ -78,6 +90,15 @@ const translations = {
       "December",
     ],
     dayNamesShort: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    dayNamesFull: [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ],
     inbox: "📦 Inbox",
     newTask: "New task...",
     newTaskSomeday: "New task for inbox...",
@@ -92,6 +113,9 @@ const translations = {
     datePickerNavPrev: "Previous Month",
     datePickerNavNext: "Next Month",
     datePickerResetDate: "Reset Date",
+    fullWeekdaysHeader: "Full Weekday Names",
+    wrapTaskTitlesHeader: "Wrap Task Titles",
+    displayOptionsHeader: "Display",
   },
   ru: {
     monthNames: [
@@ -109,6 +133,15 @@ const translations = {
       "Декабрь",
     ],
     dayNamesShort: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"],
+    dayNamesFull: [
+      "Понедельник",
+      "Вторник",
+      "Среда",
+      "Четверг",
+      "Пятница",
+      "Суббота",
+      "Воскресенье",
+    ],
     inbox: "📦 Инбокс",
     newTask: "Новая задача...",
     newTaskSomeday: "Новая задача на когда-нибудь...",
@@ -123,6 +156,9 @@ const translations = {
     datePickerNavPrev: "Предыдущий месяц",
     datePickerNavNext: "Следующий месяц",
     datePickerResetDate: "Назначить дату",
+    fullWeekdaysHeader: "Полные названия дней недели",
+    wrapTaskTitlesHeader: "Переносить заголовки задач",
+    displayOptionsHeader: "Отображение",
   },
 };
 const TASK_COLORS = ["blue", "green", "yellow", "pink", "orange"];
@@ -137,6 +173,19 @@ async function updateSettingsText() {
   document.querySelector(
     '#settings-popup label[for="language-select-popup"]',
   ).textContent = translations[lang].language;
+  const displayOptionsHeaderElement = document.querySelector(
+    ".settings-options-header",
+  );
+  if (displayOptionsHeaderElement) {
+    displayOptionsHeaderElement.textContent =
+      translations[lang].displayOptionsHeader;
+  }
+  document.querySelector(
+    '#settings-popup label[for="full-weekdays-checkbox"]',
+  ).textContent = translations[lang].fullWeekdaysHeader;
+  document.querySelector(
+    '#settings-popup label[for="wrap-task-titles-checkbox"]',
+  ).textContent = translations[lang].wrapTaskTitlesHeader;
 }
 
 function getDatesForWeek(date) {
@@ -483,8 +532,9 @@ async function renderCalendarWeek(date) {
     if (isThisCurrentWeek && date.toDateString() === today.toDateString()) {
       dayHeaderDiv.classList.add("today-highlight");
     }
-    const weekdayName =
-      translations[lang].dayNamesShort[(date.getDay() + 6) % 7];
+    const weekdayName = displayFullWeekdays
+      ? translations[lang].dayNamesFull[(date.getDay() + 6) % 7]
+      : translations[lang].dayNamesShort[(date.getDay() + 6) % 7];
     dayHeaderDiv.innerHTML = `<span class="day-number">${date.getDate()}</span><span class="day-weekday">${weekdayName}</span>`;
     dayDiv.appendChild(dayHeaderDiv);
 
@@ -568,6 +618,8 @@ async function handleAddTaskEvent(
 async function renderTasks(tasks, container) {
   if (!tasks || tasks.length === 0) return;
 
+  container.innerHTML = ""; // Clear existing tasks before re-rendering
+
   for (const task of tasks) {
     const eventDiv = await createEventElement(
       task.title,
@@ -639,6 +691,13 @@ async function createEventElement(
     taskTextElement.textContent = taskTitle;
     if (completed === 1) {
       taskTextElement.classList.add("completed");
+    }
+    if (wrapTaskTitles) {
+      taskTextElement.classList.add("wrap");
+      taskTextElement.classList.remove("no-wrap");
+    } else {
+      taskTextElement.classList.add("no-wrap");
+      taskTextElement.classList.remove("wrap");
     }
     eventContent.appendChild(taskTextElement);
 
@@ -1136,7 +1195,12 @@ async function initializeCalendar() {
   languageSelect.value = storedLanguage;
   setLanguage(storedLanguage);
 
+  fullWeekdaysCheckbox.checked = displayFullWeekdays;
+  wrapTaskTitlesCheckbox.checked = wrapTaskTitles;
+
+  await renderCalendarWeek(currentDate);
   await renderInbox();
+  await renderAllTasks();
   updateSettingsText();
 
   if (storedTheme === "auto") {
@@ -1149,6 +1213,79 @@ async function initializeCalendar() {
 
   // ** Add event listener to monthNameElement for click **
   monthNameElement.addEventListener("click", handleMonthNameClick);
+}
+
+async function renderAllTasks() {
+  // Re-render all tasks in calendar and inbox to apply display settings
+  for (const dayId of dayIds) {
+    const dayDiv = dayElements[dayId];
+    const taskContainer = dayDiv.querySelector(
+      ":scope > div:not(.day-header):not(.new-task-form)",
+    );
+    if (taskContainer) {
+      const taskElements = Array.from(taskContainer.children);
+      taskContainer.innerHTML = ""; // Clear existing tasks
+      for (const taskElement of taskElements) {
+        const taskId = taskElement.dataset.taskId;
+        if (taskId) {
+          const taskDetails = await fetchTaskDetailsById(taskId); // Fetch task details to re-create event element
+          if (taskDetails) {
+            const newEvent = await createEventElement(
+              taskDetails.title,
+              taskDetails.id,
+              taskDetails.completed,
+              taskDetails.color,
+              taskDetails.description ? 1 : 0,
+            );
+            if (newEvent) {
+              attachTaskEventListeners(newEvent, taskDetails.id);
+              taskContainer.appendChild(newEvent);
+            }
+          }
+        }
+      }
+    }
+  }
+  // Re-render inbox tasks
+  const inboxTaskContainer = inboxDiv.querySelector(
+    ":scope > div:not(.inbox-header):not(.new-task-form)",
+  );
+  if (inboxTaskContainer) {
+    const inboxTaskElements = Array.from(inboxTaskContainer.children);
+    inboxTaskContainer.innerHTML = ""; // Clear inbox tasks
+    for (const taskElement of inboxTaskElements) {
+      const taskId = taskElement.dataset.taskId;
+      if (taskId) {
+        const taskDetails = await fetchTaskDetailsById(taskId);
+        if (taskDetails) {
+          const newEvent = await createEventElement(
+            taskDetails.title,
+            taskDetails.id,
+            taskDetails.completed,
+            taskDetails.color,
+            taskDetails.description ? 1 : 0,
+          );
+          if (newEvent) {
+            attachTaskEventListeners(newEvent, taskDetails.id);
+            inboxTaskContainer.appendChild(newEvent);
+          }
+        }
+      }
+    }
+  }
+}
+
+async function fetchTaskDetailsById(taskId) {
+  try {
+    const response = await fetch(`/api/tasks/${taskId}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching task details:", error);
+    return null;
+  }
 }
 
 function handleMonthNameClick() {
@@ -1262,9 +1399,6 @@ function renderDatePicker() {
     datePickerGrid.appendChild(dayNameElement);
   }
 
-  // Get current date for highlighting
-  const today = new Date();
-
   // Render empty cells for days before the first day of the month
   for (let i = 0; i < startDayOfWeek; i++) {
     const emptyCell = document.createElement("div");
@@ -1289,6 +1423,7 @@ function renderDatePicker() {
       dayElement.classList.add("selected");
     }
     // Highlight current day
+    const today = new Date(); // define today here!
     if (dayDate.toDateString() === today.toDateString()) {
       dayElement.classList.add("current-day");
     }
@@ -1470,7 +1605,7 @@ Object.values(dayElements).forEach((dayDiv) => {
   });
 });
 
-initializeCalendar();
+document.addEventListener("DOMContentLoaded", initializeCalendar); // Wrap initializeCalendar in DOMContentLoaded
 
 prevWeekButton.addEventListener("click", () => {
   displayedWeekStartDate.setDate(displayedWeekStartDate.getDate() - 7);
@@ -1485,6 +1620,8 @@ nextWeekButton.addEventListener("click", () => {
 settingsBtn.addEventListener("click", () => {
   isSettingsOpen = !isSettingsOpen;
   settingsPopup.style.display = isSettingsOpen ? "block" : "none";
+  fullWeekdaysCheckbox.checked = displayFullWeekdays;
+  wrapTaskTitlesCheckbox.checked = wrapTaskTitles;
 });
 
 window.addEventListener("click", (event) => {
@@ -1516,6 +1653,34 @@ themeSelect.addEventListener("change", (event) => {
 languageSelect.addEventListener("change", (event) => {
   setLanguage(event.target.value);
 });
+
+function handleCheckboxChange(checkbox) {
+  const label = checkbox.closest("label.styled-checkbox");
+  if (label) {
+    label.classList.toggle("checked", checkbox.checked);
+  }
+}
+
+fullWeekdaysCheckbox.addEventListener("change", (event) => {
+  handleCheckboxChange(event.target);
+  displayFullWeekdays = event.target.checked;
+  localStorage.setItem("fullWeekdays", displayFullWeekdays);
+  renderCalendarWeek(displayedWeekStartDate);
+});
+
+handleCheckboxChange(fullWeekdaysCheckbox); // Initialize state on load
+
+wrapTaskTitlesCheckbox.addEventListener("change", async (event) => {
+  handleCheckboxChange(event.target);
+  wrapTaskTitles = event.target.checked;
+  localStorage.setItem("wrapTaskTitles", wrapTaskTitles);
+  await renderAllTasks();
+});
+
+handleCheckboxChange(wrapTaskTitlesCheckbox); // Initialize state on load
+// Set Wrap Task Titles checkbox to checked by default
+wrapTaskTitlesCheckbox.checked = true;
+handleCheckboxChange(wrapTaskTitlesCheckbox);
 
 function handleSystemThemeChange(event) {
   setTheme("auto");

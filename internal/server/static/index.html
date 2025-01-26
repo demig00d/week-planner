@@ -43,20 +43,39 @@
         <!-- Settings Popup -->
         <div id="settings-popup" class="settings-popup">
           <h3>Settings</h3>
-          <div class="settings-option">
-            <label for="theme-select">Theme</label>
-            <select id="theme-select" class="language-select">
-              <option value="auto">Auto</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
-          </div>
-          <div class="settings-option">
-            <label for="language-select-popup">Language</label>
-            <select id="language-select-popup" class="language-select">
-              <option value="en">🇺🇸 English</option>
-              <option value="ru">🇷🇺 Русский</option>
-            </select>
+          <div class="settings-columns-container">
+            <div class="settings-column">
+              <div class="settings-option">
+                <label for="theme-select">Theme</label>
+                <select id="theme-select" class="language-select">
+                  <option value="auto">Auto</option>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
+              </div>
+              <div class="settings-option">
+                <label for="language-select-popup">Language</label>
+                <select id="language-select-popup" class="language-select">
+                  <option value="en">🇺🇸 English</option>
+                  <option value="ru">🇷🇺 Русский</option>
+                </select>
+              </div>
+            </div>
+            <div class="settings-column">
+              <div class="settings-options-header">Display</div>
+              <div class="settings-option display-checkbox">
+                <label class="styled-checkbox">
+                  Full Weekday Names
+                  <input type="checkbox" id="full-weekdays-checkbox" />
+                </label>
+              </div>
+              <div class="settings-option display-checkbox">
+                <label class="styled-checkbox">
+                  Wrap Task Titles
+                  <input type="checkbox" id="wrap-task-titles-checkbox" />
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
