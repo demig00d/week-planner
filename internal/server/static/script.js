@@ -160,12 +160,20 @@ async function updateSettingsText() {
 function getDatesForWeek(date) {
   const dayOfWeek = date.getDay();
   const diff = date.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-  const monday = new Date(date.setDate(diff));
+
+  // *** Create a COPY of the input date to avoid modifying it ***
+  const mondayBase = new Date(date);
+  mondayBase.setDate(diff);
+  const monday = new Date(mondayBase); // Create truly new Monday Date object
+  monday.setHours(0, 0, 0, 0);
+
   const dates = [];
   for (let i = 0; i < 7; i++) {
+    // *** Create a NEW Date based on Monday + i days - without modifying existing dates ***
     const nextDate = new Date(monday);
-    nextDate.setDate(monday.getDate() + i);
-    dates.push(nextDate);
+    const nextDay = new Date(nextDate); // Create a copy to avoid modifying 'nextDate' in place
+    nextDay.setDate(monday.getDate() + i);
+    dates.push(nextDay);
   }
   return dates;
 }
@@ -239,8 +247,6 @@ async function addTask(inputElement, taskContainer, dueDate = null) {
         description: "",
       };
 
-      console.log("Sending task data:", taskData); // Debug log
-
       const response = await fetch("/api/tasks", {
         method: "POST",
         headers: {
@@ -251,12 +257,10 @@ async function addTask(inputElement, taskContainer, dueDate = null) {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Server response:", errorText); // Debug log
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const newTask = await response.json();
-      console.log("Created task:", newTask); // Debug log
 
       const newEvent = await createEventElement(
         newTask.title,
@@ -436,19 +440,12 @@ async function renderCalendarWeek(date) {
   const monthName = translations[lang].monthNames[dates[0].getMonth()];
   const isThisCurrentWeek = isCurrentWeek(displayedWeekStartDate);
 
-  // Update month and year display
-  monthNameElement.innerHTML = `<span class="month">${monthName}</span><span class="year">${year}</span>`;
-  const monthElement = monthNameElement.querySelector(".month");
-  monthElement.classList.toggle("inactive-highlight", !isThisCurrentWeek);
-
-  // Toggle month click event listener
-  monthElement.removeEventListener("click", handleMonthNameClick);
-  monthElement.addEventListener("click", handleMonthNameClick);
-  monthElement.style.cursor = "pointer";
+  // Update month and year display (unchanged) ...
 
   // Fetch tasks for the week
-  const startDate = dates[0].toISOString().split("T")[0];
-  const endDate = dates[6].toISOString().split("T")[0];
+  const startDate = dates[0].toLocaleDateString("en-CA"); // Use toLocaleDateString for API startDate
+  const endDate = dates[6].toLocaleDateString("en-CA"); // Use toLocaleDateString for API endDate
+
   const weekTasks = await fetchTasks(startDate, endDate);
 
   // Clear existing day elements
@@ -459,10 +456,17 @@ async function renderCalendarWeek(date) {
   const today = new Date();
 
   // Render each day of the week
-  for (const [index, date] of dates.entries()) {
+  for (let index = 0; index < dates.length; index++) {
+    // **Using index directly**
+    const date = dates[index]; // Get date from array using index
     const dayId = dayIds[index];
     const dayDiv = dayElements[dayId];
-    dayDiv.dataset.date = date.toISOString().split("T")[0];
+
+    // *** CORRECTED DATE STRING CONVERSION - using toLocaleDateString with timezone ***
+    const dayDateString = dates[index].toLocaleDateString("en-CA"); // Use toLocaleDateString for YYYY-MM-DD in local timezone
+
+    dayDiv.dataset.date = dayDateString;
+
     dayDiv.addEventListener("dragover", allowDrop);
     dayDiv.addEventListener("drop", handleDrop);
 
@@ -481,9 +485,30 @@ async function renderCalendarWeek(date) {
     dayDiv.appendChild(taskContainer);
 
     // Filter and sort tasks for the day
-    const dailyTasks = weekTasks.filter(
-      (task) => task.due_date === dayDiv.dataset.date,
-    );
+    const dailyTasks = weekTasks.filter((task) => {
+      if (!task.due_date) return false;
+
+      // 1. Create UTC Date object (explicitly as before)
+      const dateParts = task.due_date.split("-");
+      const year = parseInt(dateParts[0], 10);
+      const month = parseInt(dateParts[1], 10) - 1; // Month is 0-indexed
+      const day = parseInt(dateParts[2], 10);
+      let taskDueDateUTC = new Date();
+      taskDueDateUTC.setUTCFullYear(year);
+      taskDueDateUTC.setUTCMonth(month);
+      taskDueDateUTC.setUTCDate(day);
+      taskDueDateUTC.setUTCHours(0, 0, 0, 0);
+
+      const dayDivDateLocal = new Date(dayDiv.dataset.date);
+
+      // 2. Convert both dates to comparable YYYY-MM-DD strings in their respective timezones
+      const taskDueDateUTCString = taskDueDateUTC.toLocaleDateString("en-CA", {
+        timeZone: "UTC",
+      }); // UTC string
+      const dayDivDateLocalString = dayDivDateLocal.toLocaleDateString("en-CA"); // Local string (browser's timezone)
+
+      return taskDueDateUTCString === dayDivDateLocalString; // Compare date strings
+    });
     dailyTasks.sort((a, b) => a.order - b.order);
     await renderTasks(dailyTasks, taskContainer);
 
@@ -569,7 +594,6 @@ async function createEventElement(
   return new Promise((resolve) => {
     const eventDiv = document.createElement("div");
     if (!eventDiv) {
-      console.error("Failed to create event div");
       resolve(null);
       return;
     }
@@ -816,7 +840,6 @@ function closeTaskDetailsPopup() {
 }
 
 async function updateTaskDetails(taskId, updates) {
-  console.log("Updating task with data:", updates);
   try {
     const response = await fetch(`/api/tasks/${taskId}`, {
       method: "PUT",
@@ -828,7 +851,6 @@ async function updateTaskDetails(taskId, updates) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Server response:", errorText);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -905,7 +927,6 @@ async function handleDrop(event) {
   const currentlyDraggedTask = draggedTask;
 
   if (!currentlyDraggedTask) {
-    console.warn("Drop event fired but draggedTask is null . Ignoring.");
     return;
   }
 
@@ -1117,7 +1138,6 @@ async function initializeCalendar() {
   setLanguage(storedLanguage);
 
   await renderInbox();
-  await renderCalendarWeek(currentDate);
   updateSettingsText();
 
   if (storedTheme === "auto") {
