@@ -32,7 +32,7 @@ body {
 :root {
   --bg-color: #fafafa;
   --text-color: #000000;
-  --day-border: #eee;
+  --day-border: #ddd;
   --inbox-bg-light: #f0f0f0;
   --inbox-border: #f5f5f5;
   --event-text: #000000;
