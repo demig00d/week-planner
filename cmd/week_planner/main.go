@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"runtime"
 
@@ -55,7 +56,9 @@ func main() {
 		shutdownChan <- true
 	}()
 
-	go openBrowser(serverAddr)
+	if len(os.Args) == 2 && os.Args[1] == "open" {
+		go openBrowser(serverAddr)
+	}
 
 	<-shutdownChan
 }
