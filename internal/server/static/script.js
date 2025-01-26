@@ -436,16 +436,45 @@ async function renderCalendarWeek(date) {
   const lang = localStorage.getItem("language") || "ru";
   const dates = getDatesForWeek(new Date(date));
   displayedWeekStartDate = dates[0];
-  const year = dates[0].getFullYear();
-  const monthName = translations[lang].monthNames[dates[0].getMonth()];
-  const isThisCurrentWeek = isCurrentWeek(displayedWeekStartDate);
 
-  // Update month and year display (unchanged) ...
+  const firstDayOfMonth = dates[0];
+  const lastDayOfMonth = dates[6];
+
+  // Get month and year elements
+  const monthSpan = monthNameElement.querySelector(".month");
+  const yearSpan = monthNameElement.querySelector(".year");
+
+  let monthPart, yearPart;
+  if (firstDayOfMonth.getMonth() === lastDayOfMonth.getMonth()) {
+    // Single month case
+    monthPart = translations[lang].monthNames[firstDayOfMonth.getMonth()];
+    yearPart = firstDayOfMonth.getFullYear().toString();
+  } else {
+    // Cross-month case
+    const firstMonthName =
+      translations[lang].monthNames[firstDayOfMonth.getMonth()];
+    const lastMonthName =
+      translations[lang].monthNames[lastDayOfMonth.getMonth()];
+    const firstYear = firstDayOfMonth.getFullYear();
+    const lastYear = lastDayOfMonth.getFullYear();
+
+    monthPart = `${firstMonthName} - ${lastMonthName}`;
+    yearPart =
+      firstYear === lastYear
+        ? firstYear.toString()
+        : `${firstYear} - ${lastYear}`;
+  }
+
+  // Update separated elements
+  monthSpan.textContent = monthPart;
+  yearSpan.textContent = yearPart;
+
+  const isThisCurrentWeek = isCurrentWeek(displayedWeekStartDate);
+  monthNameElement.classList.toggle("inactive-highlight", !isThisCurrentWeek);
 
   // Fetch tasks for the week
-  const startDate = dates[0].toLocaleDateString("en-CA"); // Use toLocaleDateString for API startDate
-  const endDate = dates[6].toLocaleDateString("en-CA"); // Use toLocaleDateString for API endDate
-
+  const startDate = dates[0].toLocaleDateString("en-CA");
+  const endDate = dates[6].toLocaleDateString("en-CA");
   const weekTasks = await fetchTasks(startDate, endDate);
 
   // Clear existing day elements
@@ -457,26 +486,22 @@ async function renderCalendarWeek(date) {
 
   // Render each day of the week
   for (let index = 0; index < dates.length; index++) {
-    // **Using index directly**
-    const date = dates[index]; // Get date from array using index
+    const date = dates[index];
     const dayId = dayIds[index];
     const dayDiv = dayElements[dayId];
-
-    // *** CORRECTED DATE STRING CONVERSION - using toLocaleDateString with timezone ***
-    const dayDateString = dates[index].toLocaleDateString("en-CA"); // Use toLocaleDateString for YYYY-MM-DD in local timezone
+    const dayDateString = dates[index].toLocaleDateString("en-CA");
 
     dayDiv.dataset.date = dayDateString;
-
     dayDiv.addEventListener("dragover", allowDrop);
     dayDiv.addEventListener("drop", handleDrop);
 
-    // Create and append day header
+    // Create day header
     const dayHeaderDiv = document.createElement("div");
     dayHeaderDiv.classList.add("day-header");
     if (isThisCurrentWeek && date.toDateString() === today.toDateString()) {
       dayHeaderDiv.classList.add("today-highlight");
     }
-    const weekdayName = translations[lang].dayNames[(date.getDay() + 6) % 7]; // Adjusted for Sunday as first day
+    const weekdayName = translations[lang].dayNames[(date.getDay() + 6) % 7];
     dayHeaderDiv.innerHTML = `<span class="day-number">${date.getDate()}</span><span class="day-weekday">${weekdayName}</span>`;
     dayDiv.appendChild(dayHeaderDiv);
 
@@ -484,60 +509,51 @@ async function renderCalendarWeek(date) {
     const taskContainer = document.createElement("div");
     dayDiv.appendChild(taskContainer);
 
-    // Filter and sort tasks for the day
+    // Filter and sort tasks
     const dailyTasks = weekTasks.filter((task) => {
       if (!task.due_date) return false;
-
-      // 1. Create UTC Date object (explicitly as before)
       const dateParts = task.due_date.split("-");
-      const year = parseInt(dateParts[0], 10);
-      const month = parseInt(dateParts[1], 10) - 1; // Month is 0-indexed
-      const day = parseInt(dateParts[2], 10);
-      let taskDueDateUTC = new Date();
-      taskDueDateUTC.setUTCFullYear(year);
-      taskDueDateUTC.setUTCMonth(month);
-      taskDueDateUTC.setUTCDate(day);
-      taskDueDateUTC.setUTCHours(0, 0, 0, 0);
+      const taskDueDateUTC = new Date(
+        Date.UTC(
+          parseInt(dateParts[0], 10),
+          parseInt(dateParts[1], 10) - 1,
+          parseInt(dateParts[2], 10),
+        ),
+      );
+      const dayDivDateLocal = new Date(dayDateString);
 
-      const dayDivDateLocal = new Date(dayDiv.dataset.date);
-
-      // 2. Convert both dates to comparable YYYY-MM-DD strings in their respective timezones
-      const taskDueDateUTCString = taskDueDateUTC.toLocaleDateString("en-CA", {
-        timeZone: "UTC",
-      }); // UTC string
-      const dayDivDateLocalString = dayDivDateLocal.toLocaleDateString("en-CA"); // Local string (browser's timezone)
-
-      return taskDueDateUTCString === dayDivDateLocalString; // Compare date strings
+      return (
+        taskDueDateUTC.toISOString().slice(0, 10) ===
+        dayDivDateLocal.toISOString().slice(0, 10)
+      );
     });
     dailyTasks.sort((a, b) => a.order - b.order);
     await renderTasks(dailyTasks, taskContainer);
 
-    // Create and append new task form
+    // Create new task form
     const newTaskForm = document.createElement("form");
     newTaskForm.classList.add("new-task-form");
     newTaskForm.innerHTML = `<input type="text" placeholder="${translations[lang].newTask}">`;
     dayDiv.appendChild(newTaskForm);
 
-    // Focus input field when day is clicked
+    // Input handling
     dayDiv.addEventListener("click", (event) => {
       if (
         event.target === dayDiv ||
         (!event.target.closest(".event") &&
           !event.target.closest(".day-header"))
       ) {
-        newTaskForm.querySelector('input[type="text"]').focus();
+        newTaskForm.querySelector("input").focus();
       }
     });
 
-    // Add task on form submit,  or enter key press or input blur
-    const newTaskInput = newTaskForm.querySelector('input[type="text"]');
-
+    const newTaskInput = newTaskForm.querySelector("input");
     const addTaskHandler = async (event) => {
       await handleAddTaskEvent(
         event,
         newTaskInput,
         taskContainer,
-        dayDiv.dataset.date,
+        dayDateString,
       );
     };
 
@@ -1147,6 +1163,9 @@ async function initializeCalendar() {
         setTheme("auto");
       });
   }
+
+  // ** Add event listener to monthNameElement for click **
+  monthNameElement.addEventListener("click", handleMonthNameClick);
 }
 
 function handleMonthNameClick() {
