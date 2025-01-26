@@ -43,6 +43,7 @@ body {
   --drag-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   --highlight-text-color: #007bff;
   --dim-text-color: #888;
+  --dim-highlight-text-color: #709ff7;
 
   /* Light Theme Task Colors */
   --task-color-blue-light: #e0f7fa;
@@ -68,6 +69,7 @@ body.dark-theme {
   --drag-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
   --highlight-text-color: #66a3ff;
   --dim-text-color: #aaa;
+  --dim-highlight-text-color: #425b8b;
 
   /* Dark Theme Task Colors */
   --task-color-blue-dark: #000b1f;
@@ -248,6 +250,11 @@ body.dark-theme .inbox {
 
 .day-weekday {
   font-size: 1em;
+  color: var(--dim-text-color);
+}
+
+.day-header.today-highlight .day-weekday {
+  color: var(--dim-highlight-text-color);
 }
 
 .event {
