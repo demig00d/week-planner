@@ -65,6 +65,8 @@ func InitDB() {
 
 func initTriggers() {
 	sqldb, _ := db.DB()
+
+	// Trigger for INSERT
 	_, err := sqldb.Exec(`
         CREATE TRIGGER IF NOT EXISTS tasks_ai AFTER INSERT ON tasks
         BEGIN
@@ -73,9 +75,10 @@ func initTriggers() {
         END;
     `)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error creating INSERT trigger: %v", err)
 	}
 
+	// Trigger for DELETE
 	_, err = sqldb.Exec(`
         CREATE TRIGGER IF NOT EXISTS tasks_ad AFTER DELETE ON tasks
         BEGIN
@@ -83,18 +86,22 @@ func initTriggers() {
         END;
     `)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error creating DELETE trigger: %v", err)
 	}
 
+	// Trigger for UPDATE
 	_, err = sqldb.Exec(`
-        CREATE TRIGGER IF NOT EXISTS tasks_au AFTER UPDATE ON tasks
+        CREATE TRIGGER IF NOT EXISTS tasks_au AFTER UPDATE OF title, description ON tasks
         BEGIN
-            DELETE FROM tasks_fts WHERE rowid = old.id;
+            INSERT INTO tasks_fts(tasks_fts, rowid, title, description)
+            VALUES ('delete', old.id, NULL, NULL);
             INSERT INTO tasks_fts(rowid, title, description)
             VALUES (new.id, new.title, new.description);
         END;
     `)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error creating UPDATE trigger: %v", err)
 	}
+
+	log.Println("Triggers initialized successfully.")
 }
