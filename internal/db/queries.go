@@ -18,21 +18,22 @@ func GetTasks(date string, startDate string, endDate string) (Tasks, error) {
 	if date == "inbox" {
 		query = query.Where("due_date IS NULL")
 	} else if startDate != "" && endDate != "" {
-		start, err := time.Parse(config.DateFormat, startDate)
+		_, err := time.Parse(config.DateFormat, startDate)
 		if err != nil {
 			return tasks, NewAPIError(400, "Invalid start date format")
 		}
-		end, err := time.Parse(config.DateFormat, endDate)
+		_, err = time.Parse(config.DateFormat, endDate)
 		if err != nil {
 			return tasks, NewAPIError(400, "Invalid end date format")
 		}
-		query = query.Where("due_date >= ? AND due_date <= ?", start, end)
+		query = query.Where("DATE(due_date) >= ? AND DATE(due_date) <= ?", startDate, endDate)
 	} else if date != "" {
-		parsedDate, err := time.Parse(config.DateFormat, date)
+		// Validate date format
+		_, err := time.Parse(config.DateFormat, date)
 		if err != nil {
 			return tasks, NewAPIError(400, "Invalid date format")
 		}
-		query = query.Where("due_date = ?", parsedDate)
+		query = query.Where("DATE(due_date) = ?", date)
 	}
 
 	if err := query.Order("task_order").Find(&tasks).Error; err != nil {
