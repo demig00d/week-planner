@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Week Planner</title>
     <script src="https://cdn.jsdelivr.net/npm/fuzzysort@2.0.4/fuzzysort.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link
       rel="icon"
       href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📅</text></svg>"
@@ -165,13 +166,6 @@
           <div class="color-swatches">
             <button
               class="color-swatch"
-              data-color="no-color"
-              title="Reset Color"
-            >
-              <i class="fas fa-ban"></i>
-            </button>
-            <button
-              class="color-swatch"
               data-color="blue"
               style="background-color: var(--task-color-blue-light)"
               title="Blue"
@@ -200,6 +194,13 @@
               style="background-color: var(--task-color-orange-light)"
               title="Orange"
             ></button>
+            <button
+              class="color-swatch"
+              data-color="no-color"
+              title="Reset Color"
+            >
+              <i class="fas fa-ban"></i>
+            </button>
           </div>
           <button
             id="delete-task-details"
@@ -210,8 +211,25 @@
           </button>
         </div>
         <div class="task-details-popup-content">
-          <label for="task-description">Description:</label>
-          <textarea id="task-description" name="task-description"></textarea>
+          <label for="task-description-rendered">
+            Description:
+            <button
+              id="toggle-description-mode-btn"
+              class="description-mode-button"
+              title="Toggle Description Mode"
+            >
+              <i id="description-mode-icon" class="fa-brands fa-markdown"></i>
+            </button>
+          </label>
+          <div
+            id="task-description-rendered"
+            class="task-description-rendered"
+          ></div>
+          <textarea
+            id="task-description-textarea"
+            name="task-description"
+            style="display: block"
+          ></textarea>
         </div>
         <!-- Date Picker Container -->
         <div id="date-picker-container" class="date-picker-container">

@@ -33,12 +33,24 @@ const taskDetailsPopupOverlay = document.getElementById(
 );
 const taskDetailsPopup = document.getElementById("task-details-popup");
 const taskDetailsTitle = document.getElementById("task-details-title");
-const taskDescriptionTextarea = document.getElementById("task-description");
+const taskDescriptionTextarea = document.getElementById(
+  "task-description-textarea",
+);
+const taskDescriptionRendered = document.getElementById(
+  "task-description-rendered",
+);
 const closeTaskDetailsPopupBtn = document.getElementById(
   "close-task-details-popup",
 );
 const deleteTaskDetailsBtn = document.getElementById("delete-task-details");
+const toggleDescriptionModeBtn = document.getElementById(
+  "toggle-description-mode-btn",
+);
+const descriptionModeIcon = document.getElementById("description-mode-icon");
 let currentTaskBeingViewed = null;
+let isDescriptionRenderedMode = false; // Track description mode, default to editable
+let descriptionHeight = "100px"; // Default height, or get initial from CSS
+let minDescriptionHeight = "50px"; // Minimum height for textarea
 
 let currentDate = new Date();
 let displayedWeekStartDate = new Date(currentDate);
@@ -112,9 +124,9 @@ const translations = {
     close: "Close",
     datePickerNavPrev: "Previous Month",
     datePickerNavNext: "Next Month",
-    datePickerResetDate: "Reset Date",
-    fullWeekdaysHeader: "Full Weekday Names",
-    wrapTaskTitlesHeader: "Wrap Task Titles",
+    datePickerSetDate: "Set Date",
+    fullWeekdaysHeader: "Full weekday names",
+    wrapTaskTitlesHeader: "Wrap task titles",
     displayOptionsHeader: "Display",
   },
   ru: {
@@ -155,7 +167,7 @@ const translations = {
     close: "Закрыть",
     datePickerNavPrev: "Предыдущий месяц",
     datePickerNavNext: "Следующий месяц",
-    datePickerResetDate: "Назначить дату",
+    datePickerSetDate: "Назначить дату",
     fullWeekdaysHeader: "Полные названия дней недели",
     wrapTaskTitlesHeader: "Переносить заголовки задач",
     displayOptionsHeader: "Отображение",
@@ -225,7 +237,7 @@ function isCurrentWeek(date) {
 async function fetchTasks(startDate, endDate) {
   try {
     const response = await fetch(
-      `/api/tasks?start_date=${startDate}&end_date=${endDate}`,
+      `/api/tasks?start_date=${startDate}&end-date=${endDate}`,
     );
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -783,7 +795,7 @@ async function openTaskDetails(taskId) {
       taskDetailsDateInput.textContent =
         translations[
           localStorage.getItem("language") || "ru"
-        ].datePickerResetDate;
+        ].datePickerSetDate;
     }
     renderDatePicker(); // Render datepicker initially
     taskDetailsPopupOverlay.style.display = "flex";
@@ -828,7 +840,20 @@ async function openTaskDetails(taskId) {
       highlightTask(currentTaskBeingViewed);
     };
 
-    taskDescriptionTextarea.value = task.description || "";
+    const descriptionText = task.description || "";
+    taskDescriptionTextarea.value = descriptionText;
+
+    // Adjust textarea height initially based on content when popup opens
+    adjustTextareaHeight(); // CALL adjustTextareaHeight() **BEFORE** setting rendered content and height!
+    taskDescriptionRendered.innerHTML = marked.parse(descriptionText);
+    taskDescriptionRendered.style.height = descriptionHeight; // Set initial height for rendered as well
+
+    isDescriptionRenderedMode = false; // Initialize to editable mode
+    taskDescriptionRendered.style.display = "none";
+    taskDescriptionTextarea.style.display = "block";
+    toggleDescriptionModeBtn.classList.remove("rendered-mode");
+    descriptionModeIcon.style.color = "";
+
     taskDetailsPopupOverlay.style.display = "flex";
 
     // Set up color swatches
@@ -859,6 +884,8 @@ async function openTaskDetails(taskId) {
         });
       };
     });
+
+    adjustTextareaHeight();
   } catch (error) {
     console.error("Error fetching task details:", error);
   }
@@ -938,11 +965,37 @@ async function updateTaskDetails(taskId, updates) {
   }
 }
 
+function adjustTextareaHeight() {
+  taskDescriptionTextarea.style.height = "auto"; // Reset height to recalculate
+  let scrollHeight = taskDescriptionTextarea.scrollHeight;
+  let newHeight = scrollHeight;
+
+  // Apply minimum and maximum height constraints
+  newHeight = Math.max(parseInt(minDescriptionHeight), newHeight);
+
+  taskDescriptionTextarea.style.height = `${newHeight}px`;
+  descriptionHeight = `${newHeight}px`; // Update stored height
+  taskDescriptionRendered.style.height = descriptionHeight; // Keep rendered height in sync
+}
+
+taskDescriptionTextarea.addEventListener("input", () => {
+  adjustTextareaHeight();
+});
+
 taskDescriptionTextarea.addEventListener("blur", async (event) => {
   if (currentTaskBeingViewed) {
     await updateTaskDetails(currentTaskBeingViewed, {
       description: event.target.value,
     });
+    // Re-render markdown when textarea blurs only if in rendered mode
+    if (isDescriptionRenderedMode) {
+      const descriptionText = event.target.value || "";
+      const renderedDescription = marked.parse(descriptionText);
+      taskDescriptionRendered.innerHTML = renderedDescription;
+      adjustTextareaHeight(); // Re-adjust height after blur in rendered mode
+    } else {
+      adjustTextareaHeight(); // Re-adjust height after blur in edit mode as well
+    }
   }
 });
 
@@ -961,6 +1014,31 @@ deleteTaskDetailsBtn.addEventListener("click", async () => {
   if (currentTaskBeingViewed) {
     await handleDeleteTask(currentTaskBeingViewed);
     closeTaskDetailsPopup();
+  }
+});
+
+toggleDescriptionModeBtn.addEventListener("click", () => {
+  isDescriptionRenderedMode = !isDescriptionRenderedMode; // Toggle the mode
+
+  if (isDescriptionRenderedMode) {
+    // Switch to Rendered (View) Mode
+    const descriptionText = taskDescriptionTextarea.value || "";
+    const renderedDescription = marked.parse(descriptionText);
+    taskDescriptionRendered.innerHTML = renderedDescription;
+    taskDescriptionRendered.style.display = "block";
+    taskDescriptionTextarea.style.display = "none";
+    toggleDescriptionModeBtn.classList.add("rendered-mode");
+    descriptionModeIcon.style.color = "";
+    taskDescriptionRendered.style.height = descriptionHeight; // Apply stored height
+  } else {
+    // Switch to Edit Mode
+    taskDescriptionRendered.style.display = "none";
+    taskDescriptionTextarea.style.display = "block";
+    toggleDescriptionModeBtn.classList.remove("rendered-mode");
+    descriptionModeIcon.style.color = "";
+    taskDescriptionTextarea.style.height = descriptionHeight; // Apply stored height
+    taskDescriptionTextarea.focus(); // Focus on textarea for editing
+    adjustTextareaHeight(); // Adjust height when switching back to edit mode
   }
 });
 
@@ -1539,9 +1617,7 @@ document
   .addEventListener("click", async () => {
     taskDetailsDateInput.dataset.selectedDate = "";
     taskDetailsDateInput.textContent =
-      translations[
-        localStorage.getItem("language") || "ru"
-      ].datePickerResetDate;
+      translations[localStorage.getItem("language") || "ru"].datePickerSetDate;
     datePickerContainer.style.display = "none";
     datePickerVisible = false;
     await updateTaskDateAndRefresh(null);
