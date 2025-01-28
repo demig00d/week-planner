@@ -75,6 +75,7 @@ const fuzzySearchPopup = document.getElementById("fuzzy-search-popup");
 const fuzzySearchInput = document.getElementById("fuzzy-search-input");
 const fuzzySearchResultsList = document.getElementById("fuzzy-search-results");
 let isSearchOpen = false;
+let searchTimeout = null;
 let popupOpen = false; // Flag to track if popup is open
 let currentInboxTitle = "📦 Inbox"; // Default, will be updated after fetch
 
@@ -1458,10 +1459,9 @@ function handleMonthNameClick() {
 // *** FUZZY SEARCH FUNCTIONS ***
 
 async function displayFuzzySearchResults(query) {
-  fuzzySearchResultsList.innerHTML = ""; // Clear previous search entries at the very beginning
-
   if (query.length === 0) {
-    return;
+    fuzzySearchResultsList.innerHTML = ""; // Clear results if query is empty
+    return; // Return early if query is empty
   }
 
   try {
@@ -1472,6 +1472,8 @@ async function displayFuzzySearchResults(query) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const tasks = await response.json();
+
+    fuzzySearchResultsList.innerHTML = ""; // Clear results before adding new ones
 
     if (tasks.length === 0) {
       const noResultsItem = document.createElement("li");
@@ -1497,6 +1499,7 @@ async function displayFuzzySearchResults(query) {
         listItem.addEventListener("click", () => {
           isSearchOpen = false;
           fuzzySearchPopup.style.display = "none";
+          fuzzySearchResultsList.innerHTML = "";
           fuzzySearchInput.value = "";
 
           if (task.due_date) {
@@ -1710,6 +1713,10 @@ searchBtn.addEventListener("click", () => {
   fuzzySearchPopup.style.display = isSearchOpen ? "block" : "none";
   if (isSearchOpen) {
     fuzzySearchInput.focus();
+  } else {
+    // Clear results when the popup is closed
+    fuzzySearchResultsList.innerHTML = "";
+    fuzzySearchInput.value = "";
   }
 });
 
@@ -1722,6 +1729,9 @@ window.addEventListener("click", (event) => {
   ) {
     isSearchOpen = false;
     fuzzySearchPopup.style.display = "none";
+    // Clear results when the popup is closed by clicking outside
+    fuzzySearchResultsList.innerHTML = "";
+    fuzzySearchInput.value = "";
   }
   if (
     datePickerVisible &&
@@ -1733,15 +1743,12 @@ window.addEventListener("click", (event) => {
   }
 });
 
-let searchTimeout = null;
 fuzzySearchInput.addEventListener("input", () => {
   clearTimeout(searchTimeout);
   const query = fuzzySearchInput.value.trim();
 
-  displayFuzzySearchResults(query);
-
   searchTimeout = setTimeout(() => {
-    // No need for setTimeout anymore, call directly.
+    displayFuzzySearchResults(query);
   }, 300);
 });
 
