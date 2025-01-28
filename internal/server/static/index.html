@@ -65,14 +65,14 @@
             <div class="settings-column">
               <div class="settings-options-header">Display</div>
               <div class="settings-option display-checkbox">
-                <label class="styled-checkbox">
-                  Full Weekday Names
+                <label for="full-weekdays-checkbox" class="styled-checkbox">
+                  Full weekday names
                   <input type="checkbox" id="full-weekdays-checkbox" />
                 </label>
               </div>
               <div class="settings-option display-checkbox">
-                <label class="styled-checkbox">
-                  Wrap Task Titles
+                <label for="wrap-task-titles-checkbox" class="styled-checkbox">
+                  Wrap task titles
                   <input type="checkbox" id="wrap-task-titles-checkbox" />
                 </label>
               </div>
@@ -211,7 +211,7 @@
           </button>
         </div>
         <div class="task-details-popup-content">
-          <label for="task-description-rendered">
+          <label for="task-description-textarea">
             Description:
             <button
               id="toggle-description-mode-btn"
@@ -229,6 +229,7 @@
             id="task-description-textarea"
             name="task-description"
             style="display: block"
+            for="task-description-textarea"
           ></textarea>
         </div>
         <!-- Date Picker Container -->

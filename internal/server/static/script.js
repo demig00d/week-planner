@@ -76,6 +76,7 @@ const fuzzySearchInput = document.getElementById("fuzzy-search-input");
 const fuzzySearchResultsList = document.getElementById("fuzzy-search-results");
 let isSearchOpen = false;
 let popupOpen = false; // Flag to track if popup is open
+let currentInboxTitle = "📦 Inbox"; // Default, will be updated after fetch
 
 // Date Picker Variables
 const taskDetailsDateInput = document.getElementById("task-details-date");
@@ -111,7 +112,6 @@ const translations = {
       "Saturday",
       "Sunday",
     ],
-    inbox: "📦 Inbox",
     newTask: "New task...",
     newTaskSomeday: "New task for inbox...",
     settings: "Settings",
@@ -128,6 +128,10 @@ const translations = {
     fullWeekdaysHeader: "Full weekday names",
     wrapTaskTitlesHeader: "Wrap task titles",
     displayOptionsHeader: "Display",
+    themeAuto: "Auto",
+    themeLight: "Light",
+    themeDark: "Dark",
+    description: "Description",
   },
   ru: {
     monthNames: [
@@ -154,7 +158,6 @@ const translations = {
       "Суббота",
       "Воскресенье",
     ],
-    inbox: "📦 Инбокс",
     newTask: "Новая задача...",
     newTaskSomeday: "Новая задача на когда-нибудь...",
     settings: "Настройки",
@@ -169,35 +172,118 @@ const translations = {
     datePickerNavNext: "Следующий месяц",
     datePickerSetDate: "Назначить дату",
     fullWeekdaysHeader: "Полные названия дней недели",
-    wrapTaskTitlesHeader: "Переносить заголовки задач",
+    wrapTaskTitlesHeader: "Переносить имя задач на следующую строку",
     displayOptionsHeader: "Отображение",
+    themeAuto: "Авто",
+    themeLight: "Светлая",
+    themeDark: "Тёмная",
+    description: "Описание",
   },
 };
 const TASK_COLORS = ["blue", "green", "yellow", "pink", "orange"];
 
 async function updateSettingsText() {
   const lang = localStorage.getItem("language") || "ru";
-  document.querySelector("#settings-popup h3").textContent =
-    translations[lang].settings;
-  document.querySelector(
+
+  // Settings Header
+  const settingsHeader = document.querySelector("#settings-popup h3");
+  if (settingsHeader) {
+    settingsHeader.textContent = translations[lang].settings;
+  } else {
+    console.error("Could not find settings header element.");
+  }
+
+  // Theme Label
+  const themeLabel = document.querySelector(
     '#settings-popup label[for="theme-select"]',
-  ).textContent = translations[lang].theme;
-  document.querySelector(
+  );
+  if (themeLabel) {
+    themeLabel.textContent = translations[lang].theme;
+  } else {
+    console.error("Could not find theme label element.");
+  }
+
+  // Theme Select Options
+  const themeSelectElement = document.getElementById("theme-select");
+  if (themeSelectElement) {
+    themeSelectElement.querySelector('option[value="auto"]').textContent =
+      translations[lang].themeAuto;
+    themeSelectElement.querySelector('option[value="light"]').textContent =
+      translations[lang].themeLight;
+    themeSelectElement.querySelector('option[value="dark"]').textContent =
+      translations[lang].themeDark;
+  } else {
+    console.error("Could not find theme select element.");
+  }
+
+  // Language Label
+  const languageLabel = document.querySelector(
     '#settings-popup label[for="language-select-popup"]',
-  ).textContent = translations[lang].language;
+  );
+  if (languageLabel) {
+    languageLabel.textContent = translations[lang].language;
+  } else {
+    console.error("Could not find language label element.");
+  }
+
+  // Display Options Header
   const displayOptionsHeaderElement = document.querySelector(
     ".settings-options-header",
   );
   if (displayOptionsHeaderElement) {
     displayOptionsHeaderElement.textContent =
       translations[lang].displayOptionsHeader;
+  } else {
+    console.error("Could not find display options header element.");
   }
-  document.querySelector(
-    '#settings-popup label[for="full-weekdays-checkbox"]',
-  ).textContent = translations[lang].fullWeekdaysHeader;
-  document.querySelector(
-    '#settings-popup label[for="wrap-task-titles-checkbox"]',
-  ).textContent = translations[lang].wrapTaskTitlesHeader;
+
+  // Full Weekdays Label
+  const fullWeekdaysCheckbox = document.getElementById(
+    "full-weekdays-checkbox",
+  );
+  if (fullWeekdaysCheckbox) {
+    const label = fullWeekdaysCheckbox.parentElement;
+    const newText = translations[lang].fullWeekdaysHeader;
+    // Clear label and re-add translated text followed by checkbox
+    label.innerHTML = "";
+    label.appendChild(document.createTextNode(newText));
+    label.appendChild(fullWeekdaysCheckbox);
+  } else {
+    console.error("Could not find full weekdays checkbox element.");
+  }
+
+  // Wrap Task Titles Label
+  const wrapTaskTitlesCheckbox = document.getElementById(
+    "wrap-task-titles-checkbox",
+  );
+  if (wrapTaskTitlesCheckbox) {
+    const label = wrapTaskTitlesCheckbox.parentElement;
+    const newText = translations[lang].wrapTaskTitlesHeader;
+    // Clear label and re-add translated text followed by checkbox
+    label.innerHTML = "";
+    label.appendChild(document.createTextNode(newText));
+    label.appendChild(wrapTaskTitlesCheckbox);
+  } else {
+    console.error("Could not find wrap task titles checkbox element.");
+  }
+
+  // Search Placeholder
+  if (fuzzySearchInput) {
+    fuzzySearchInput.placeholder = translations[lang].searchPlaceholder;
+  } else {
+    console.error("Could not find fuzzy search input element.");
+  }
+
+  // Description Label in Task Popup
+  const descriptionLabel = document.querySelector(
+    '#task-details-popup .task-details-popup-content label[for="task-description-textarea"]',
+  );
+  if (descriptionLabel) {
+    descriptionLabel.firstChild.textContent =
+      translations[lang].description + ":";
+  } else {
+    console.error("Could not find description label in task popup.");
+  }
 }
 
 function getDatesForWeek(date) {
@@ -271,10 +357,11 @@ async function fetchInboxTitle() {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    return data.inbox_title;
+    currentInboxTitle = data.inbox_title || "📦 Inbox"; // Update currentInboxTitle here
+    return currentInboxTitle;
   } catch (error) {
     console.error("Could not fetch inbox title:", error);
-    return "📦 Inbox"; // Default title
+    return "📦 Inbox";
   }
 }
 
@@ -464,7 +551,7 @@ async function saveInboxTitle(newTitle) {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-
+    currentInboxTitle = newTitle; // Update currentInboxTitle after successful save
     // No need to update inboxHeaderElement.textContent here, it's done in handleSave
     return;
   } catch (error) {
@@ -1253,9 +1340,6 @@ function setTheme(theme) {
 
 function setLanguage(lang) {
   localStorage.setItem("language", lang);
-  if (inboxHeaderElement) {
-    inboxHeaderElement.textContent = translations[lang].inbox;
-  }
   if (inboxInputElement) {
     inboxInputElement.placeholder = translations[lang].newTaskSomeday;
   }
@@ -1279,7 +1363,6 @@ async function initializeCalendar() {
   await renderCalendarWeek(currentDate);
   await renderInbox();
   await renderAllTasks();
-  updateSettingsText();
 
   if (storedTheme === "auto") {
     window
@@ -1375,8 +1458,9 @@ function handleMonthNameClick() {
 // *** FUZZY SEARCH FUNCTIONS ***
 
 async function displayFuzzySearchResults(query) {
+  fuzzySearchResultsList.innerHTML = ""; // Clear previous search entries at the very beginning
+
   if (query.length === 0) {
-    fuzzySearchResultsList.innerHTML = "";
     return;
   }
 
@@ -1388,8 +1472,6 @@ async function displayFuzzySearchResults(query) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const tasks = await response.json();
-
-    fuzzySearchResultsList.innerHTML = "";
 
     if (tasks.length === 0) {
       const noResultsItem = document.createElement("li");
@@ -1407,7 +1489,7 @@ async function displayFuzzySearchResults(query) {
                 month: "short",
               },
             )
-          : translations[localStorage.getItem("language") || "ru"].inbox;
+          : currentInboxTitle; // Use currentInboxTitle when due_date is null
         listItem.innerHTML = `
           <div class="fuzzy-search-task-title">${task.title}</div>
           <div class="fuzzy-search-task-date">${taskDate}</div>
@@ -1656,8 +1738,10 @@ fuzzySearchInput.addEventListener("input", () => {
   clearTimeout(searchTimeout);
   const query = fuzzySearchInput.value.trim();
 
+  displayFuzzySearchResults(query);
+
   searchTimeout = setTimeout(() => {
-    displayFuzzySearchResults(query);
+    // No need for setTimeout anymore, call directly.
   }, 300);
 });
 
@@ -1681,7 +1765,11 @@ Object.values(dayElements).forEach((dayDiv) => {
   });
 });
 
-document.addEventListener("DOMContentLoaded", initializeCalendar); // Wrap initializeCalendar in DOMContentLoaded
+document.addEventListener("DOMContentLoaded", () => {
+  initializeCalendar().then(() => {
+    updateSettingsText();
+  });
+});
 
 prevWeekButton.addEventListener("click", () => {
   displayedWeekStartDate.setDate(displayedWeekStartDate.getDate() - 7);

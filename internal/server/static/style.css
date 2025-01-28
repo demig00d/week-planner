@@ -894,11 +894,12 @@ body.dark-theme .event[data-task-color="orange"] {
 }
 
 .fuzzy-search-popup input {
-  width: calc(100% - 20px);
-  padding: 8px;
+  width: calc(100% - 10px); /* Accounts for popup's padding */
+  padding: 8px 10px;
   border: 1px solid var(--task-border-color);
   border-radius: 4px;
-  margin-bottom: 10px;
+  margin: 0 auto 10px; /* Centering magic here */
+  display: block; /* Ensure margin auto works */
   background-color: transparent;
   color: var(--text-color);
   box-sizing: border-box;
@@ -913,12 +914,16 @@ body.dark-theme .event[data-task-color="orange"] {
   list-style: none;
   padding: 0;
   margin: 0;
+  overflow: hidden; /* Ensure ul does not overflow */
 }
 
 .fuzzy-search-popup li {
   padding: 8px;
   border-bottom: 1px solid var(--task-border-color);
   cursor: pointer;
+  overflow: hidden; /* Hide any content that overflows */
+  text-overflow: ellipsis; /* Add ellipsis to overflowing text */
+  white-space: nowrap; /* Prevent text from wrapping to the next line */
 }
 
 .fuzzy-search-popup li:last-child {
@@ -935,11 +940,19 @@ body.dark-theme .fuzzy-search-popup li:hover {
 
 .fuzzy-search-task-title {
   font-weight: bold;
+  overflow: hidden; /* Hide any content that overflows */
+  text-overflow: ellipsis; /* Add ellipsis to overflowing text */
+  white-space: nowrap; /* Prevent text from wrapping to the next line */
+  display: block;
 }
 
 .fuzzy-search-task-date {
   font-size: 0.9em;
   color: var(--dim-text-color);
+  overflow: hidden; /* Hide any content that overflows */
+  text-overflow: ellipsis; /* Add ellipsis to overflowing text */
+  white-space: nowrap; /* Prevent text from wrapping to the next line */
+  display: block;
 }
 
 /* Custom Date Picker Styles */
