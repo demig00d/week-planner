@@ -1877,13 +1877,19 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     // Close Task Details Popup
     if (taskDetailsPopupOverlay.style.display === "flex") {
-      console.log("kek");
       closeTaskDetailsPopup();
       return;
     }
 
     // Close Settings Popup
     if (isSettingsOpen) {
+      isSettingsOpen = false;
+      settingsPopup.style.display = "none";
+      return;
+    }
+
+    // Close Date Picker
+    if (datePickerVisible) {
       isSearchOpen = false;
       fuzzySearchPopup.style.display = "none";
       fuzzySearchResultsList.innerHTML = "";
@@ -1891,10 +1897,12 @@ document.addEventListener("keydown", (event) => {
       return;
     }
 
-    // Close Date Picker
-    if (datePickerVisible) {
-      datePickerContainer.style.display = "none";
-      datePickerVisible = false;
+    // Close Fuzzy Search Popup
+    if (isSearchOpen) {
+      isSearchOpen = false;
+      fuzzySearchPopup.style.display = "none";
+      fuzzySearchResultsList.innerHTML = "";
+      fuzzySearchInput.value = "";
       return;
     }
   }
