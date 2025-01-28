@@ -1872,3 +1872,30 @@ taskDetailsPopupOverlay.addEventListener("transitionend", () => {
     popupOpen = false;
   }
 });
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    // Close Task Details Popup
+    if (taskDetailsPopupOverlay.style.display === "flex") {
+      console.log("kek");
+      closeTaskDetailsPopup();
+      return;
+    }
+
+    // Close Settings Popup
+    if (isSettingsOpen) {
+      isSearchOpen = false;
+      fuzzySearchPopup.style.display = "none";
+      fuzzySearchResultsList.innerHTML = "";
+      fuzzySearchInput.value = "";
+      return;
+    }
+
+    // Close Date Picker
+    if (datePickerVisible) {
+      datePickerContainer.style.display = "none";
+      datePickerVisible = false;
+      return;
+    }
+  }
+});
