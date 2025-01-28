@@ -633,27 +633,52 @@ body.dark-theme .event[data-task-color="orange"] {
 
 .task-details-popup h2 {
   margin-top: 0;
-  margin-bottom: 15px;
-  border-bottom: 1px solid var(--task-border-color);
-  padding-bottom: 10px;
+  margin-bottom: 20px;
+  border-bottom: none;
+  padding-bottom: 0;
+  text-align: center; /* Center title */
 }
 
+.task-popup-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Distribute space between groups */
+  margin-bottom: 10px;
+}
+
+.task-actions-group-left,
+.task-actions-group-center,
+.task-actions-group-right {
+  display: flex;
+  align-items: center;
+}
+
+/* Optional: Adjust spacing between calendar and swatches if needed */
 .task-details-header {
   display: flex;
   align-items: center;
-  justify-content: space-between; /* Align items and distribute space */
-  gap: 10px;
-  margin-bottom: 15px;
+  gap: 20px; /* Adjust this value to control space between calendar and swatches */
+  margin-bottom: 0;
+}
+
+/* Optional: If you want more space around the delete button */
+.task-actions-group-center {
+  margin-left: 20px; /* Add left margin to center group */
+  margin-right: 20px; /* Add right margin to center group */
 }
 
 .task-details-date {
-  padding: 8px;
+  padding: 6px 8px;
   border: 1px solid var(--task-border-color);
   border-radius: 4px;
   background-color: transparent;
   color: var(--text-color);
   cursor: pointer;
   position: relative;
+  margin-right: 8px; /* Changed to margin-right */
+  white-space: nowrap;
+  font-size: 0.9em;
+  margin-bottom: 5px;
 }
 
 .task-details-date:focus {
@@ -664,16 +689,18 @@ body.dark-theme .event[data-task-color="orange"] {
 .task-details-date-icon {
   position: absolute;
   top: 50%;
-  right: 8px;
+  right: 6px;
   transform: translateY(-50%);
   pointer-events: none;
   color: var(--dim-text-color);
+  font-size: 0.9em;
 }
 
 .task-details-popup-content {
   margin-bottom: 15px;
   display: flex;
   flex-direction: column;
+  margin-top: 15px;
 }
 
 .task-details-popup-content label {
@@ -728,47 +755,78 @@ body.dark-theme .event[data-task-color="orange"] {
 }
 
 .close-popup-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
+  position: static;
   background: none;
   border: none;
   color: var(--text-color);
   font-size: 1.2em;
   cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s ease-in-out;
+  margin-left: 0; /* Removed margin-left:auto */
+}
+
+.close-popup-btn:hover {
+  opacity: 1;
 }
 
 /* Visible Delete Button in Popup */
 .task-details-popup .delete-button {
-  background-color: #dc3545;
-  color: white;
+  background-color: transparent;
+  color: var(--delete-color);
   border: none;
-  padding: 8px 16px;
+  padding: 0;
   border-radius: 4px;
   cursor: pointer;
   font-size: 1em;
-  transition: background-color 0.2s ease-in-out;
+  transition:
+    background-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
   opacity: 1 !important;
-  margin-left: auto; /* Push delete button to the right */
+  margin-left: 0; /* Removed margin-left: auto */
+  white-space: nowrap;
+  margin-bottom: 5px;
+  margin-right: 0; /* Removed margin-right: auto */
 }
 
 .task-details-popup .delete-button:hover {
-  background-color: #c82333;
+  background-color: transparent;
+  color: #ff4d4d;
 }
 
 .task-details-popup .delete-button i {
-  color: white !important;
-  margin-right: 5px;
+  color: inherit !important;
+  margin-right: 0;
 }
 
 /* Color Swatches Styling */
 .task-details-header .color-swatches {
   display: flex;
-  justify-content: center; /* Center color swatches */
   align-items: center;
-  gap: 8px;
-  margin-bottom: 0; /* Reset margin-bottom if needed */
-  flex-grow: 1; /* Allow color swatches to take available horizontal space */
+  gap: 6px;
+  margin-bottom: 0;
+  flex-wrap: wrap;
+}
+
+/* Color Swatch Size Reduction */
+.color-swatch {
+  border: 1px solid var(--task-border-color);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  position: relative;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: transparent;
+  margin-bottom: 5px;
+}
+
+.color-swatch i {
+  font-size: 0.8em;
 }
 
 /* Other Specific Styles */
@@ -818,21 +876,6 @@ body.dark-theme .event[data-task-color="orange"] {
   margin-bottom: 10px;
 }
 
-.color-swatch {
-  border: 1px solid var(--task-border-color);
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  cursor: pointer;
-  padding: 0;
-  margin: 0;
-  position: relative;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-color: transparent;
-}
-
 .color-swatch::after {
   content: "";
   position: absolute;
@@ -844,13 +887,6 @@ body.dark-theme .event[data-task-color="orange"] {
   z-index: -1;
   border: none;
   background: inherit;
-}
-
-.color-swatch i {
-  position: static;
-  transform: none;
-  font-size: 1em;
-  color: var(--dim-text-color);
 }
 
 .color-swatch.selected-color::after {
@@ -1142,4 +1178,9 @@ body.dark-theme .task-details-popup-content .task-description-rendered code {
 
 .description-mode-button.rendered-mode i {
   color: var(--highlight-text-color);
+}
+
+.task-actions-group {
+  display: flex;
+  align-items: center;
 }

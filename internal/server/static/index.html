@@ -150,66 +150,83 @@
     <!-- Task Details Popup -->
     <div id="task-details-popup-overlay" class="task-details-popup-overlay">
       <div id="task-details-popup" class="task-details-popup">
-        <button
-          id="close-task-details-popup"
-          class="close-popup-btn"
-          title="Close"
-        >
-          <i class="fas fa-times"></i>
-        </button>
-        <h2 id="task-details-title">Task Title</h2>
-        <div class="task-details-header">
-          <div class="task-details-date" id="task-details-date" tabindex="0">
-            Pick a date
-            <i class="fas fa-calendar-alt task-details-date-icon"></i>
+        <div class="task-popup-top-bar">
+          <!-- Left side: Calendar and Color Swatches -->
+          <div class="task-actions-group task-actions-group-left">
+            <div class="task-details-header">
+              <div
+                class="task-details-date"
+                id="task-details-date"
+                tabindex="0"
+              >
+                Pick a date
+                <i class="fas fa-calendar-alt task-details-date-icon"></i>
+              </div>
+              <div class="color-swatches">
+                <button
+                  class="color-swatch"
+                  data-color="blue"
+                  style="background-color: var(--task-color-blue-light)"
+                  title="Blue"
+                ></button>
+                <button
+                  class="color-swatch"
+                  data-color="green"
+                  style="background-color: var(--task-color-green-light)"
+                  title="Green"
+                ></button>
+                <button
+                  class="color-swatch"
+                  data-color="yellow"
+                  style="background-color: var(--task-color-yellow-light)"
+                  title="Yellow"
+                ></button>
+                <button
+                  class="color-swatch"
+                  data-color="pink"
+                  style="background-color: var(--task-color-pink-light)"
+                  title="Pink"
+                ></button>
+                <button
+                  class="color-swatch"
+                  data-color="orange"
+                  style="background-color: var(--task-color-orange-light)"
+                  title="Orange"
+                ></button>
+                <button
+                  class="color-swatch"
+                  data-color="no-color"
+                  title="Reset Color"
+                >
+                  <i class="fas fa-ban"></i>
+                </button>
+              </div>
+            </div>
           </div>
-          <div class="color-swatches">
+
+          <!-- Middle: Delete Button (separated into its own group) -->
+          <div class="task-actions-group task-actions-group-center">
             <button
-              class="color-swatch"
-              data-color="blue"
-              style="background-color: var(--task-color-blue-light)"
-              title="Blue"
-            ></button>
-            <button
-              class="color-swatch"
-              data-color="green"
-              style="background-color: var(--task-color-green-light)"
-              title="Green"
-            ></button>
-            <button
-              class="color-swatch"
-              data-color="yellow"
-              style="background-color: var(--task-color-yellow-light)"
-              title="Yellow"
-            ></button>
-            <button
-              class="color-swatch"
-              data-color="pink"
-              style="background-color: var(--task-color-pink-light)"
-              title="Pink"
-            ></button>
-            <button
-              class="color-swatch"
-              data-color="orange"
-              style="background-color: var(--task-color-orange-light)"
-              title="Orange"
-            ></button>
-            <button
-              class="color-swatch"
-              data-color="no-color"
-              title="Reset Color"
+              id="delete-task-details"
+              class="delete-button"
+              title="Delete Task"
             >
-              <i class="fas fa-ban"></i>
+              <i class="fas fa-trash-alt"></i>
             </button>
           </div>
-          <button
-            id="delete-task-details"
-            class="delete-button"
-            title="Delete Task"
-          >
-            <i class="fas fa-trash-alt"></i>
-          </button>
+
+          <!-- Right side: Close Button -->
+          <div class="task-actions-group task-actions-group-right">
+            <button
+              id="close-task-details-popup"
+              class="close-popup-btn"
+              title="Close"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
         </div>
+        <h2 id="task-details-title">Task Title</h2>
         <div class="task-details-popup-content">
           <label for="task-description-textarea">
             Description:
