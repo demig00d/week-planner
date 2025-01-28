@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"runtime"
 
+	"week-planner/internal/config"
 	"week-planner/internal/db"
 	"week-planner/internal/server"
 )
@@ -30,6 +31,12 @@ func openBrowser(url string) {
 }
 
 func main() {
+
+	config, err := config.NewConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	db.InitDB()
 	defer func() {
 		if sqldb, err := db.GetDB().DB(); err == nil {
@@ -41,11 +48,11 @@ func main() {
 
 	router := server.SetupRouter()
 
-	serverAddr := "http://localhost:5000/"
-	fmt.Println("Server running on :5000")
+	serverAddr := fmt.Sprintf("http://%s:%d/", config.Host, config.Port)
+	fmt.Printf("Server running on %s:%d\n", config.Host, config.Port)
 
 	srv := &http.Server{
-		Addr:    ":5000",
+		Addr:    fmt.Sprintf(":%d", config.Port),
 		Handler: router,
 	}
 	go func() {
