@@ -4,7 +4,9 @@ import (
 	"embed"
 	"github.com/gorilla/mux"
 	"io/fs"
+	"log" // Import the log package
 	"net/http"
+	"time"
 	"week-planner/internal/api"
 )
 
@@ -14,8 +16,11 @@ var staticFS embed.FS
 func SetupRouter() *mux.Router {
 	router := mux.NewRouter()
 
+	// Logging Middleware
 	router.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			startTime := time.Now()
+
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
@@ -24,7 +29,15 @@ func SetupRouter() *mux.Router {
 				return
 			}
 
+			// Log request details BEFORE processing
+			log.Printf("Incoming Request: Method=%s, URL=%s, Timestamp=%s", r.Method, r.URL.Path, startTime.Format(time.RFC3339))
+
+			// Serve the next handler in the chain
 			next.ServeHTTP(w, r)
+
+			// Log request completion details AFTER processing (optional, can add response time etc. here)
+			// duration := time.Since(startTime)
+			// log.Printf("Request Completed: Method=%s, URL=%s, Duration=%v", r.Method, r.URL.Path, duration)
 		})
 	})
 
