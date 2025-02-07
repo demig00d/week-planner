@@ -47,11 +47,22 @@ const toggleDescriptionModeBtn = document.getElementById(
   "toggle-description-mode-btn",
 );
 const descriptionModeIcon = document.getElementById("description-mode-icon");
+
+// New elements for recurring and reminder icons in popup
+const recurringTaskDetailsBtn = document.getElementById(
+  "recurring-task-details",
+);
+const reminderTaskDetailsBtn = document.getElementById("reminder-task-details");
+
+const markDoneTaskDetailsBtn = document.getElementById(
+  "mark-done-task-details",
+);
 let currentTaskBeingViewed = null;
 let isDescriptionRenderedMode = false; // Track description mode, default to editable
 let descriptionHeight = "100px"; // Default height, or get initial from CSS
 let minDescriptionHeight = "50px"; // Minimum height for textarea
 
+let todayTasksCount = -1;
 let currentDate = new Date();
 let displayedWeekStartDate = new Date(currentDate);
 let draggedTask = null;
@@ -133,6 +144,10 @@ const translations = {
     themeLight: "Light",
     themeDark: "Dark",
     description: "Description",
+    oneTaskLeft: "task left",
+    tasksLeft: "tasks left",
+    baseTitleName: "Week planner",
+    noTodayTasks: "No tasks for today",
   },
   ru: {
     monthNames: [
@@ -179,9 +194,17 @@ const translations = {
     themeLight: "Светлая",
     themeDark: "Тёмная",
     description: "Описание",
+    oneTaskLeft: "задача осталась",
+    tasksLeft: "задач(и) осталось",
+    baseTitleName: "Планировщик недели",
+    noTodayTasks: "Нет задач на сегодня",
   },
 };
 const TASK_COLORS = ["blue", "green", "yellow", "pink", "orange"];
+
+let currentWeekTasks = [];
+let todayTasks = []; // Global variable to store tasks specifically for today
+let eventSource = null; // EventSource variable
 
 async function updateSettingsText() {
   const lang = localStorage.getItem("language") || "ru";
@@ -324,7 +347,7 @@ function isCurrentWeek(date) {
 async function fetchTasks(startDate, endDate) {
   try {
     const response = await fetch(
-      `/api/tasks?start_date=${startDate}&end-date=${endDate}`,
+      `/api/tasks?start_date=${startDate}&end_date=${endDate}`,
     );
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -392,6 +415,13 @@ async function addTask(inputElement, taskContainer, dueDate = null) {
       }
 
       const newTask = await response.json();
+      if (dueDate === new Date().toLocaleDateString("en-CA")) {
+        // Check if due today
+        todayTasks.push(newTask); // Add to todayTasks if due today
+      }
+      if (dueDate) {
+        currentWeekTasks.push(newTask); // Add to current week tasks if it has a due date
+      }
 
       const newEvent = await createEventElement(
         newTask.title,
@@ -406,6 +436,7 @@ async function addTask(inputElement, taskContainer, dueDate = null) {
         taskContainer.appendChild(newEvent);
       }
       inputElement.value = "";
+      updateTabTitle(countTodayTasks()); // Use frontend count
     } catch (error) {
       console.error("Error adding task:", error);
     }
@@ -546,7 +577,9 @@ async function saveInboxTitle(newTitle) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ inbox_title: newTitle }),
+      body: JSON.stringify({
+        inbox_title: newTitle,
+      }),
     });
 
     if (!response.ok) {
@@ -607,6 +640,7 @@ async function renderCalendarWeek(date) {
   const startDate = dates[0].toLocaleDateString("en-CA");
   const endDate = dates[6].toLocaleDateString("en-CA");
   const weekTasks = await fetchTasks(startDate, endDate);
+  currentWeekTasks = weekTasks; // Store fetched tasks in global variable
 
   // Clear existing day elements
   Object.values(dayElements).forEach((dayElement) => {
@@ -694,6 +728,15 @@ async function renderCalendarWeek(date) {
     newTaskInput.addEventListener("keydown", addTaskHandler);
     newTaskInput.addEventListener("blur", addTaskHandler);
   }
+  updateTabTitle(countTodayTasks()); // Use frontend count
+}
+
+function countTodayTasks() {
+  const incompleteTasksCount = todayTasks.filter(
+    (task) => task.completed === 0,
+  ).length;
+  todayTasksCount = incompleteTasksCount;
+  return todayTasksCount;
 }
 
 async function handleAddTaskEvent(
@@ -752,6 +795,9 @@ async function createEventElement(
     eventDiv.dataset.taskId = taskId;
     if (color) {
       eventDiv.dataset.taskColor = color;
+    }
+    if (taskDetailsDateInput.dataset.selectedDate) {
+      eventDiv.dataset.dueDate = taskDetailsDateInput.dataset.selectedDate;
     }
 
     eventDiv.draggable = true;
@@ -841,6 +887,7 @@ async function openTaskDetails(taskId) {
     }
     const task = await response.json();
 
+    const isCompleted = task.completed === 1;
     // Make title editable
     taskDetailsTitle.innerHTML = "";
     const titleInput = document.createElement("input");
@@ -853,7 +900,19 @@ async function openTaskDetails(taskId) {
     const handleTitleBlur = async () => {
       const newTitle = titleInput.value.trim();
       if (newTitle !== task.title) {
-        await updateTaskDetails(taskId, { title: newTitle });
+        await updateTaskDetails(taskId, {
+          title: newTitle,
+        });
+        // Update in currentWeekTasks
+        const taskIndex = currentWeekTasks.findIndex((t) => t.id === taskId);
+        if (taskIndex !== -1) {
+          currentWeekTasks[taskIndex].title = newTitle;
+        }
+        // Update in todayTasks if present
+        const todayTaskIndex = todayTasks.findIndex((t) => t.id === taskId);
+        if (todayTaskIndex !== -1) {
+          todayTasks[todayTaskIndex].title = newTitle;
+        }
       }
       const taskElement = document.querySelector(
         `.event[data-task-id="${taskId}"]`,
@@ -892,10 +951,39 @@ async function openTaskDetails(taskId) {
       if (!currentTaskBeingViewed) return;
 
       if (currentTaskBeingViewed) {
-        await updateTaskDetails(currentTaskBeingViewed, { due_date: newDate });
         const taskElement = document.querySelector(
           `.event[data-task-id="${currentTaskBeingViewed}"]`,
         );
+        const wasTodayTask =
+          taskElement &&
+          taskElement.dataset.dueDate ===
+            new Date().toLocaleDateString("en-CA");
+        const isTodayTask = newDate === new Date().toLocaleDateString("en-CA");
+
+        await updateTaskDetails(currentTaskBeingViewed, {
+          due_date: newDate,
+        });
+        // Update in currentWeekTasks
+        const taskIndex = currentWeekTasks.findIndex((t) => t.id === taskId);
+        if (taskIndex !== -1) {
+          currentWeekTasks[taskIndex].due_date = newDate;
+        }
+
+        if (wasTodayTask && !isTodayTask) {
+          // Date changed from today
+          todayTasks = todayTasks.filter(
+            (task) => task.id !== currentTaskBeingViewed,
+          );
+        } else if (!wasTodayTask && isTodayTask) {
+          // Date changed to today
+          const taskDetails = await fetchTaskDetailsById(
+            currentTaskBeingViewed,
+          ); // Re-fetch for latest data
+          if (taskDetails) {
+            todayTasks.push(taskDetails);
+          }
+        }
+
         if (taskElement) {
           taskElement.dataset.dueDate = newDate;
         }
@@ -954,7 +1042,15 @@ async function openTaskDetails(taskId) {
         }
 
         if (currentTaskBeingViewed) {
-          await updateTaskDetails(currentTaskBeingViewed, { color: color });
+          await updateTaskDetails(currentTaskBeingViewed, {
+            color: color,
+          });
+          // Update in currentWeekTasks
+          const taskIndex = currentWeekTasks.findIndex((t) => t.id === taskId);
+          if (taskIndex !== -1) {
+            currentWeekTasks[taskIndex].color = color;
+          }
+          // No need to update color in todayTasks as it's not used for counting
           const taskElement = document.querySelector(
             `.event[data-task-id="${currentTaskBeingViewed}"]`,
           );
@@ -974,6 +1070,12 @@ async function openTaskDetails(taskId) {
     });
 
     adjustTextareaHeight();
+
+    // Set initial state for Mark as Done button in popup
+    updateMarkAsDoneButton(isCompleted);
+    // Always show recurring and reminder icons (for decorative purpose)
+    recurringTaskDetailsBtn.style.display = "inline-block";
+    reminderTaskDetailsBtn.style.display = "inline-block";
   } catch (error) {
     console.error("Error fetching task details:", error);
   }
@@ -1003,6 +1105,22 @@ function getTaskBackgroundColor(color) {
     orange: "var(--task-color-orange-dark)",
   };
   return theme === "dark" ? darkColors[color] : lightColors[color];
+}
+
+function updateMarkAsDoneButton(isCompleted) {
+  if (isCompleted) {
+    markDoneTaskDetailsBtn.dataset.completed = 1;
+    markDoneTaskDetailsBtn.innerHTML = '<i class="fas fa-check-circle"></i>'; // Checkmark icon for "Undone" state
+    markDoneTaskDetailsBtn.title = "Mark as undone";
+  } else {
+    markDoneTaskDetailsBtn.innerHTML = '<i class="far fa-check-circle"></i>'; // Outline checkmark icon for "Done" state
+    markDoneTaskDetailsBtn.title = "Mark as done";
+    markDoneTaskDetailsBtn.dataset.completed = 0;
+  }
+}
+
+function updateTaskEventDisplay(taskElement, completed) {
+  handleTaskCompletionUI(taskElement, completed);
 }
 
 function closeTaskDetailsPopup() {
@@ -1075,6 +1193,14 @@ taskDescriptionTextarea.addEventListener("blur", async (event) => {
     await updateTaskDetails(currentTaskBeingViewed, {
       description: event.target.value,
     });
+    // Update in currentWeekTasks
+    const taskIndex = currentWeekTasks.findIndex(
+      (t) => t.id === currentTaskBeingViewed,
+    );
+    if (taskIndex !== -1) {
+      currentWeekTasks[taskIndex].description = event.target.value;
+    }
+    // No need to update description in todayTasks as it's not used for counting
     // Re-render markdown when textarea blurs only if in rendered mode
     if (isDescriptionRenderedMode) {
       const descriptionText = event.target.value || "";
@@ -1188,10 +1314,34 @@ async function handleDrop(event) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ due_date: newDueDate }),
+        body: JSON.stringify({
+          due_date: newDueDate,
+        }),
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Update todayTasks based on date change
+      const wasTodayTask =
+        currentlyDraggedTask.dataset.dueDate ===
+        new Date().toLocaleDateString("en-CA");
+      const isTodayTask = newDueDate === new Date().toLocaleDateString("en-CA");
+
+      if (wasTodayTask && !isTodayTask) {
+        // Moved from today to another day/inbox
+        todayTasks = todayTasks.filter((task) => task.id !== parseInt(taskId));
+      } else if (!wasTodayTask && isTodayTask) {
+        // Moved to today from another day/inbox
+        const taskDetails = await fetchTaskDetailsById(taskId); // Re-fetch to get latest task data
+        if (taskDetails) {
+          todayTasks.push(taskDetails);
+        }
+      }
+      // Update in currentWeekTasks
+      const taskIndex = currentWeekTasks.findIndex((t) => t.id === taskId);
+      if (taskIndex !== -1) {
+        currentWeekTasks[taskIndex].due_date = newDueDate;
       }
 
       const rect = targetContainerElement.getBoundingClientRect();
@@ -1221,6 +1371,7 @@ async function handleDrop(event) {
       console.error("Error updating task due date:", error);
     }
   }
+  updateTabTitle(countTodayTasks()); // Use frontend count
 }
 
 function animateDrop(element, container) {
@@ -1242,34 +1393,49 @@ async function handleTaskCompletion(taskId, completed) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ completed: completed }),
+      body: JSON.stringify({
+        completed: completed,
+      }),
     });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
+    // Update todayTasks locally if task is in it
+    const taskToUpdateIndex = todayTasks.findIndex(
+      (task) => task.id === taskId,
+    );
+    if (taskToUpdateIndex !== -1) {
+      todayTasks[taskToUpdateIndex].completed = completed;
+    }
+    // Update in currentWeekTasks
+    const taskIndex = currentWeekTasks.findIndex((t) => t.id === taskId);
+    if (taskIndex !== -1) {
+      currentWeekTasks[taskIndex].completed = completed;
+    }
+
     const taskElement = document.querySelector(
-      `.event[data-task-id="${taskId}"]`,
+      `.event[data-task-id="${taskId}"]`, // Correct selector here
     );
     if (taskElement) {
-      const doneButton = taskElement.querySelector(".done-button");
-      const undoneButton = taskElement.querySelector(".undone-button");
-      const taskTextElement = taskElement.querySelector(".task-text");
-
-      if (completed === 1) {
-        taskTextElement.classList.add("completed");
-        doneButton.style.display = "none";
-        undoneButton.style.display = "inline-block";
-      } else {
-        taskTextElement.classList.remove("completed");
-        doneButton.style.display = "inline-block";
-        undoneButton.style.display = "none";
-      }
+      handleTaskCompletionUI(taskElement, completed);
     }
   } catch (error) {
     console.error("Error updating task completion:", error);
   }
+  updateTabTitle(countTodayTasks()); // Use frontend count
 }
 
+function handleTaskCompletionUI(taskElement, completed) {
+  const doneButton = taskElement.querySelector(".done-button");
+  const undoneButton = taskElement.querySelector(".undone-button");
+  const taskTextElement = taskElement.querySelector(".task-text");
+  taskTextElement.classList.toggle("completed", completed === 1);
+  doneButton.style.display = completed === 1 ? "none" : "inline-block";
+  undoneButton.style.display = completed === 0 ? "none" : "inline-block";
+  if (currentTaskBeingViewed === parseInt(taskElement.dataset.taskId)) {
+    updateMarkAsDoneButton(completed === 1); // Update popup button too
+  }
+}
 async function handleDeleteTask(taskId) {
   try {
     const response = await fetch(`/api/tasks/${taskId}`, {
@@ -1278,11 +1444,17 @@ async function handleDeleteTask(taskId) {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
+    // Update todayTasks locally if task is in it
+    todayTasks = todayTasks.filter((task) => task.id !== taskId);
+    // Update currentWeekTasks
+    currentWeekTasks = currentWeekTasks.filter((task) => task.id !== taskId);
+
     const taskElement = document.querySelector(
       `.event[data-task-id="${taskId}"]`,
     );
     if (taskElement) {
       taskElement.remove();
+      updateTabTitle(countTodayTasks()); // Use frontend count
     }
   } catch (error) {
     console.error("Error deleting task:", error);
@@ -1307,6 +1479,7 @@ async function updateTaskOrder(taskContainer) {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
+    // No need to update currentWeekTasks for order change as it doesn't affect today's count
   } catch (error) {
     console.error("Error updating task order:", error);
   }
@@ -1364,6 +1537,8 @@ async function initializeCalendar() {
   await renderCalendarWeek(currentDate);
   await renderInbox();
   await renderAllTasks();
+  await fetchAndSetTodayTasks();
+  updateTabTitle(countTodayTasks());
 
   if (storedTheme === "auto") {
     window
@@ -1375,6 +1550,20 @@ async function initializeCalendar() {
 
   // ** Add event listener to monthNameElement for click **
   monthNameElement.addEventListener("click", handleMonthNameClick);
+
+  setupSSE(); // Setup SSE connection
+}
+
+async function fetchAndSetTodayTasks() {
+  const today = new Date();
+  const todayString = today.toLocaleDateString("en-CA");
+  try {
+    const tasks = await fetchTasks(todayString, todayString);
+    todayTasks = tasks; // Populate todayTasks array
+  } catch (error) {
+    console.error("Error fetching today's tasks:", error);
+    todayTasks = []; // Initialize to empty array in case of error
+  }
 }
 
 async function renderAllTasks() {
@@ -1508,7 +1697,9 @@ async function displayFuzzySearchResults(query) {
             renderCalendarWeek(currentDate);
             highlightTask(task.id);
           } else {
-            inboxDiv.scrollIntoView({ behavior: "smooth" });
+            inboxDiv.scrollIntoView({
+              behavior: "smooth",
+            });
             highlightTask(task.id);
           }
         });
@@ -1602,7 +1793,11 @@ async function handleDateSelection(dateString) {
   taskDetailsDateInput.dataset.selectedDate = dateString;
   taskDetailsDateInput.textContent = new Date(dateString).toLocaleDateString(
     localStorage.getItem("language") || "ru",
-    { year: "numeric", month: "short", day: "numeric" },
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    },
   );
   datePickerContainer.style.display = "none";
   datePickerVisible = false;
@@ -1616,62 +1811,56 @@ async function updateTaskDateAndRefresh(newDate) {
     const taskElement = document.querySelector(
       `.event[data-task-id="${currentTaskBeingViewed}"]`,
     );
-    let oldDayContainer = null;
-    if (taskElement) {
-      oldDayContainer = taskElement.parentNode; // Get the current parent day container
-    }
-
-    await updateTaskDetails(currentTaskBeingViewed, { due_date: newDate });
-
-    if (
-      newDate === null &&
+    const wasTodayTask =
       taskElement &&
-      oldDayContainer &&
-      oldDayContainer !==
-        inboxDiv.querySelector(
-          ":scope > div:not(.inbox-header):not(.new-task-form)",
-        )
-    ) {
-      // If date is reset to inbox and task was in a day container, move it to inbox immediately
-      const inboxTaskContainer = inboxDiv.querySelector(
-        ":scope > div:not(.inbox-header):not(.new-task-form)",
+      taskElement.dataset.dueDate === new Date().toLocaleDateString("en-CA");
+    const isTodayTask = newDate === new Date().toLocaleDateString("en-CA");
+
+    await updateTaskDetails(currentTaskBeingViewed, {
+      due_date: newDate,
+    });
+
+    // Update in currentWeekTasks
+    const taskIndex = currentWeekTasks.findIndex(
+      (t) => t.id === currentTaskBeingViewed,
+    );
+    if (taskIndex !== -1) {
+      currentWeekTasks[taskIndex].due_date = newDate;
+    }
+
+    if (wasTodayTask && !isTodayTask) {
+      // Date changed from today
+      todayTasks = todayTasks.filter(
+        (task) => task.id !== currentTaskBeingViewed,
       );
-      if (inboxTaskContainer && taskElement) {
-        oldDayContainer.removeChild(taskElement); // Remove from day
-        inboxTaskContainer.appendChild(taskElement); // Add to inbox
-        await updateTaskOrder(inboxTaskContainer); // Update order in inbox
+    } else if (!wasTodayTask && isTodayTask) {
+      // Date changed to today
+      const taskDetails = await fetchTaskDetailsById(currentTaskBeingViewed); // Re-fetch for latest data
+      if (taskDetails) {
+        todayTasks.push(taskDetails);
       }
     }
 
-    // Re-render calendar to reflect changes in days
-    if (newDate) {
-      const newDueDate = new Date(newDate);
-      const firstDayOfNewWeek = getDatesForWeek(newDueDate)[0];
-      const firstDayOfDisplayedWeek = getDatesForWeek(
-        displayedWeekStartDate,
-      )[0];
-
-      if (
-        !(
-          firstDayOfNewWeek.getFullYear() ===
-            firstDayOfDisplayedWeek.getFullYear() &&
-          firstDayOfNewWeek.getMonth() === firstDayOfDisplayedWeek.getMonth() &&
-          firstDayOfNewWeek.getDate() === firstDayOfDisplayedWeek.getDate()
-        )
-      ) {
-        displayedWeekStartDate = firstDayOfNewWeek;
-        await renderCalendarWeek(displayedWeekStartDate);
-      } else {
-        await renderCalendarWeek(displayedWeekStartDate);
-      }
-    }
-    await renderInbox(); // Re-render inbox to remove task or add if date is null (re-render always to ensure inbox tasks are up to date)
-    highlightTask(currentTaskBeingViewed);
+    // ... (rest of updateTaskDateAndRefresh - calendar re-rendering etc.) ...
+    updateTabTitle(countTodayTasks()); // Use frontend count - update title *after* todayTasks is updated!
   }
 }
 
 // *** EVENT LISTENERS ***
 
+markDoneTaskDetailsBtn.addEventListener("click", async () => {
+  if (!currentTaskBeingViewed) return;
+  const isCompleted = markDoneTaskDetailsBtn.dataset.completed === "1";
+  const newCompletedStatus = isCompleted ? 0 : 1;
+  await handleTaskCompletion(currentTaskBeingViewed, newCompletedStatus);
+  updateMarkAsDoneButton(newCompletedStatus === 1); // Update button appearance
+  const taskElement = document.querySelector(
+    `.event[data-task-id="${currentTaskBeingViewed}"]`,
+  );
+  if (taskElement) {
+    updateTaskEventDisplay(taskElement, newCompletedStatus);
+  }
+});
 taskDetailsDateInput.addEventListener("click", (event) => {
   event.stopPropagation(); // Prevent popup overlay from closing datepicker immediately
   datePickerVisible = !datePickerVisible;
@@ -1907,3 +2096,49 @@ document.addEventListener("keydown", (event) => {
     }
   }
 });
+
+function updateTabTitle(count) {
+  let title =
+    translations[localStorage.getItem("language") || "ru"].baseTitleName || "";
+  if (count > 1) {
+    const tasksLeftText =
+      translations[localStorage.getItem("language") || "ru"].tasksLeft ||
+      "tasks left";
+    title = `${count} ${tasksLeftText}`;
+  } else if (count == 1) {
+    const taskLeftText =
+      translations[localStorage.getItem("language") || "ru"].oneTaskLeft ||
+      "task left";
+    title = `${count} ${taskLeftText}`;
+  } else {
+    title =
+      translations[localStorage.getItem("language") || "ru"].noTodayTasks ||
+      "No tasks for today";
+  }
+
+  document.title = title;
+}
+
+function setupSSE() {
+  eventSource = new EventSource("/api/events"); // Establish SSE connection
+
+  eventSource.onopen = () => {
+    console.log("SSE connection opened");
+  };
+
+  eventSource.onerror = (error) => {
+    console.error("SSE error:", error);
+    if (eventSource.readyState === EventSource.CLOSED) {
+      // Connection was closed, attempt to reconnect after a delay
+      console.log("SSE connection closed, attempting to reconnect...");
+      setTimeout(setupSSE, 5000); // Reconnect after 5 seconds
+    }
+  };
+
+  eventSource.addEventListener("date-change", async (event) => {
+    console.log("Received date-change event from SSE");
+    await fetchAndSetTodayTasks(); // Refetch tasks for the new "today"
+    updateTabTitle(countTodayTasks()); // Update tab title
+    renderCalendarWeek(currentDate); // Optionally re-render calendar week
+  });
+}

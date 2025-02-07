@@ -4,7 +4,7 @@ import (
 	"embed"
 	"github.com/gorilla/mux"
 	"io/fs"
-	"log" // Import the log package
+	"log"
 	"net/http"
 	"time"
 	"week-planner/internal/api"
@@ -13,7 +13,7 @@ import (
 //go:embed static/*
 var staticFS embed.FS
 
-func SetupRouter() *mux.Router {
+func SetupRouter(dateChangeChan chan bool) *mux.Router {
 	router := mux.NewRouter()
 
 	// Logging Middleware
@@ -29,15 +29,9 @@ func SetupRouter() *mux.Router {
 				return
 			}
 
-			// Log request details BEFORE processing
 			log.Printf("Incoming Request: Method=%s, URL=%s, Timestamp=%s", r.Method, r.URL.Path, startTime.Format(time.RFC3339))
 
-			// Serve the next handler in the chain
 			next.ServeHTTP(w, r)
-
-			// Log request completion details AFTER processing (optional, can add response time etc. here)
-			// duration := time.Since(startTime)
-			// log.Printf("Request Completed: Method=%s, URL=%s, Duration=%v", r.Method, r.URL.Path, duration)
 		})
 	})
 
@@ -50,6 +44,9 @@ func SetupRouter() *mux.Router {
 	router.HandleFunc("/api/tasks/bulk_update_order", api.BulkUpdateTaskOrderHandler).Methods("POST", "OPTIONS")
 	router.HandleFunc("/api/tasks/{id}", api.DeleteTaskHandler).Methods("DELETE", "OPTIONS")
 	router.HandleFunc("/api/search_tasks", api.SearchTasksHandler).Methods("GET", "OPTIONS")
+
+	// SSE Endpoint - Pass dateChangeChan
+	router.HandleFunc("/api/events", api.DateChangeEventsHandler(dateChangeChan)).Methods("GET")
 
 	fsys, err := fs.Sub(staticFS, "static")
 	if err != nil {

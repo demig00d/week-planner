@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"runtime"
+	"sync"
+	"time"
 
 	"week-planner/internal/config"
 	"week-planner/internal/db"
@@ -31,8 +34,7 @@ func openBrowser(url string) {
 }
 
 func main() {
-
-	config, err := config.NewConfig()
+	cfg, err := config.NewConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -45,14 +47,35 @@ func main() {
 	}()
 
 	shutdownChan := make(chan bool)
+	dateChangeChan := make(chan bool)
+	var lastCheckDay string
+	var mu sync.Mutex
 
-	router := server.SetupRouter()
+	go func() {
+		ticker := time.NewTicker(1 * time.Minute)
+		defer ticker.Stop()
 
-	serverAddr := fmt.Sprintf("http://%s:%d/", config.Host, config.Port)
-	fmt.Printf("Server running on %s:%d\n", config.Host, config.Port)
+		for range ticker.C {
+			now := time.Now()
+			today := now.Format(config.DateFormat)
+
+			mu.Lock()
+			if today != lastCheckDay {
+				log.Println("Date changed, sending date-change event")
+				lastCheckDay = today
+				dateChangeChan <- true
+			}
+			mu.Unlock()
+		}
+	}()
+
+	router := server.SetupRouter(dateChangeChan)
+
+	serverAddr := fmt.Sprintf("http://%s:%d/", cfg.Host, cfg.Port)
+	fmt.Printf("Server running on %s:%d\n", cfg.Host, cfg.Port)
 
 	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", config.Port),
+		Addr:    fmt.Sprintf(":%d", cfg.Port),
 		Handler: router,
 	}
 	go func() {
@@ -68,4 +91,9 @@ func main() {
 	}
 
 	<-shutdownChan
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("Server Shutdown Failed:%+v", err)
+	}
 }

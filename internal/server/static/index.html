@@ -194,6 +194,8 @@
                   title="Orange"
                 ></button>
                 <button
+                  +
+                  class="color-swatch selected-color"
                   class="color-swatch"
                   data-color="no-color"
                   title="Reset Color"
@@ -203,9 +205,32 @@
               </div>
             </div>
           </div>
-
-          <!-- Middle: Delete Button (separated into its own group) -->
           <div class="task-actions-group task-actions-group-center">
+            <div class="task-actions-group task-actions-group-done-button">
+              <button
+                id="mark-done-task-details"
+                class="done-button"
+                title="Mark as done"
+              >
+                <i class="far fa-check-circle"></i>
+              </button>
+            </div>
+            <button
+              id="recurring-task-details"
+              class="recurring-button"
+              title="Recurring task"
+              style="display: none"
+            >
+              <i class="fas fa-sync-alt"></i>
+            </button>
+            <button
+              id="reminder-task-details"
+              class="reminder-button"
+              title="Reminder set"
+              style="display: none"
+            >
+              <i class="fas fa-bell"></i>
+            </button>
             <button
               id="delete-task-details"
               class="delete-button"
@@ -214,7 +239,6 @@
               <i class="fas fa-trash-alt"></i>
             </button>
           </div>
-
           <!-- Right side: Close Button -->
           <div class="task-actions-group task-actions-group-right">
             <button
