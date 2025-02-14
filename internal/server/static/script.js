@@ -48,7 +48,6 @@ const toggleDescriptionModeBtn = document.getElementById(
 );
 const descriptionModeIcon = document.getElementById("description-mode-icon");
 
-// New elements for recurring and reminder icons in popup
 const recurringTaskDetailsBtn = document.getElementById(
   "recurring-task-details",
 );
@@ -58,11 +57,10 @@ const markDoneTaskDetailsBtn = document.getElementById(
   "mark-done-task-details",
 );
 let currentTaskBeingViewed = null;
-let isDescriptionRenderedMode = false; // Track description mode, default to editable
-let descriptionHeight = "100px"; // Default height, or get initial from CSS
-let minDescriptionHeight = "50px"; // Minimum height for textarea
+let isDescriptionRenderedMode = false;
+let descriptionHeight = "100px";
+let minDescriptionHeight = "50px";
 
-let todayTasksCount = -1;
 let currentDate = new Date();
 let displayedWeekStartDate = new Date(currentDate);
 let draggedTask = null;
@@ -73,24 +71,21 @@ let inboxInputElement = null;
 let isEditingInboxTitle = false;
 let displayFullWeekdays = localStorage.getItem("fullWeekdays") === "true";
 let wrapTaskTitles = localStorage.getItem("wrapTaskTitles") !== "false";
-// Set wrapTaskTitles to true by default
 if (localStorage.getItem("wrapTaskTitles") === null) {
   wrapTaskTitles = true;
 } else {
   wrapTaskTitles = localStorage.getItem("wrapTaskTitles") !== "false";
 }
 
-// Fuzzy Search Variables
 const searchBtn = document.getElementById("search-btn");
 const fuzzySearchPopup = document.getElementById("fuzzy-search-popup");
 const fuzzySearchInput = document.getElementById("fuzzy-search-input");
 const fuzzySearchResultsList = document.getElementById("fuzzy-search-results");
 let isSearchOpen = false;
 let searchTimeout = null;
-let popupOpen = false; // Flag to track if popup is open
-let currentInboxTitle = "📦 Inbox"; // Default, will be updated after fetch
+let popupOpen = false;
+let currentInboxTitle = "📦 Inbox";
 
-// Date Picker Variables
 const taskDetailsDateInput = document.getElementById("task-details-date");
 const datePickerContainer = document.getElementById("date-picker-container");
 const datePickerMonthYear = document.getElementById("date-picker-month-year");
@@ -203,13 +198,12 @@ const translations = {
 const TASK_COLORS = ["blue", "green", "yellow", "pink", "orange"];
 
 let currentWeekTasks = [];
-let todayTasks = []; // Global variable to store tasks specifically for today
-let eventSource = null; // EventSource variable
+let todayTasks = [];
+let eventSource = null;
 
 async function updateSettingsText() {
   const lang = localStorage.getItem("language") || "ru";
 
-  // Settings Header
   const settingsHeader = document.querySelector("#settings-popup h3");
   if (settingsHeader) {
     settingsHeader.textContent = translations[lang].settings;
@@ -217,7 +211,6 @@ async function updateSettingsText() {
     console.error("Could not find settings header element.");
   }
 
-  // Theme Label
   const themeLabel = document.querySelector(
     '#settings-popup label[for="theme-select"]',
   );
@@ -227,7 +220,6 @@ async function updateSettingsText() {
     console.error("Could not find theme label element.");
   }
 
-  // Theme Select Options
   const themeSelectElement = document.getElementById("theme-select");
   if (themeSelectElement) {
     themeSelectElement.querySelector('option[value="auto"]').textContent =
@@ -240,7 +232,6 @@ async function updateSettingsText() {
     console.error("Could not find theme select element.");
   }
 
-  // Language Label
   const languageLabel = document.querySelector(
     '#settings-popup label[for="language-select-popup"]',
   );
@@ -250,7 +241,6 @@ async function updateSettingsText() {
     console.error("Could not find language label element.");
   }
 
-  // Display Options Header
   const displayOptionsHeaderElement = document.querySelector(
     ".settings-options-header",
   );
@@ -261,14 +251,12 @@ async function updateSettingsText() {
     console.error("Could not find display options header element.");
   }
 
-  // Full Weekdays Label
   const fullWeekdaysCheckbox = document.getElementById(
     "full-weekdays-checkbox",
   );
   if (fullWeekdaysCheckbox) {
     const label = fullWeekdaysCheckbox.parentElement;
     const newText = translations[lang].fullWeekdaysHeader;
-    // Clear label and re-add translated text followed by checkbox
     label.innerHTML = "";
     label.appendChild(document.createTextNode(newText));
     label.appendChild(fullWeekdaysCheckbox);
@@ -276,14 +264,12 @@ async function updateSettingsText() {
     console.error("Could not find full weekdays checkbox element.");
   }
 
-  // Wrap Task Titles Label
   const wrapTaskTitlesCheckbox = document.getElementById(
     "wrap-task-titles-checkbox",
   );
   if (wrapTaskTitlesCheckbox) {
     const label = wrapTaskTitlesCheckbox.parentElement;
     const newText = translations[lang].wrapTaskTitlesHeader;
-    // Clear label and re-add translated text followed by checkbox
     label.innerHTML = "";
     label.appendChild(document.createTextNode(newText));
     label.appendChild(wrapTaskTitlesCheckbox);
@@ -291,14 +277,12 @@ async function updateSettingsText() {
     console.error("Could not find wrap task titles checkbox element.");
   }
 
-  // Search Placeholder
   if (fuzzySearchInput) {
     fuzzySearchInput.placeholder = translations[lang].searchPlaceholder;
   } else {
     console.error("Could not find fuzzy search input element.");
   }
 
-  // Description Label in Task Popup
   const descriptionLabel = document.querySelector(
     '#task-details-popup .task-details-popup-content label[for="task-description-textarea"]',
   );
@@ -310,33 +294,31 @@ async function updateSettingsText() {
   }
 }
 
-function getDatesForWeek(date) {
+function getWeekDates(date) {
   const dayOfWeek = date.getDay();
   const diff = date.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
 
-  // *** Create a COPY of the input date to avoid modifying it ***
   const mondayBase = new Date(date);
   mondayBase.setDate(diff);
-  const monday = new Date(mondayBase); // Create truly new Monday Date object
+  const monday = new Date(mondayBase);
   monday.setHours(0, 0, 0, 0);
 
   const dates = [];
   for (let i = 0; i < 7; i++) {
-    // *** Create a NEW Date based on Monday + i days - without modifying existing dates ***
     const nextDate = new Date(monday);
-    const nextDay = new Date(nextDate); // Create a copy to avoid modifying 'nextDate' in place
+    const nextDay = new Date(nextDate);
     nextDay.setDate(monday.getDate() + i);
     dates.push(nextDay);
   }
   return dates;
 }
 
-function isCurrentWeek(date) {
+function isDateCurrentWeek(date) {
   const now = new Date();
   const firstDayCurrentWeek = new Date(
     now.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1)),
   );
-  const firstDayDisplayedWeek = getDatesForWeek(new Date(date))[0];
+  const firstDayDisplayedWeek = getWeekDates(new Date(date))[0];
   return (
     firstDayCurrentWeek.getFullYear() === firstDayDisplayedWeek.getFullYear() &&
     firstDayCurrentWeek.getMonth() === firstDayDisplayedWeek.getMonth() &&
@@ -344,7 +326,7 @@ function isCurrentWeek(date) {
   );
 }
 
-async function fetchTasks(startDate, endDate) {
+async function requestTasksForWeek(startDate, endDate) {
   try {
     const response = await fetch(
       `/api/tasks?start_date=${startDate}&end_date=${endDate}`,
@@ -360,7 +342,7 @@ async function fetchTasks(startDate, endDate) {
   }
 }
 
-async function fetchInboxTasks() {
+async function requestInboxTasks() {
   try {
     const response = await fetch(`/api/tasks?date=inbox`);
     if (!response.ok) {
@@ -374,14 +356,14 @@ async function fetchInboxTasks() {
   }
 }
 
-async function fetchInboxTitle() {
+async function requestInboxTitle() {
   try {
     const response = await fetch("/api/inbox_title");
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    currentInboxTitle = data.inbox_title || "📦 Inbox"; // Update currentInboxTitle here
+    currentInboxTitle = data.inbox_title || "📦 Inbox";
     return currentInboxTitle;
   } catch (error) {
     console.error("Could not fetch inbox title:", error);
@@ -389,7 +371,7 @@ async function fetchInboxTitle() {
   }
 }
 
-async function addTask(inputElement, taskContainer, dueDate = null) {
+async function createTask(inputElement, taskContainer, dueDate = null) {
   const taskTitle = inputElement.value.trim();
   if (taskTitle) {
     try {
@@ -416,11 +398,10 @@ async function addTask(inputElement, taskContainer, dueDate = null) {
 
       const newTask = await response.json();
       if (dueDate === new Date().toLocaleDateString("en-CA")) {
-        // Check if due today
-        todayTasks.push(newTask); // Add to todayTasks if due today
+        todayTasks.push(newTask);
       }
       if (dueDate) {
-        currentWeekTasks.push(newTask); // Add to current week tasks if it has a due date
+        currentWeekTasks.push(newTask);
       }
 
       const newEvent = await createEventElement(
@@ -429,6 +410,7 @@ async function addTask(inputElement, taskContainer, dueDate = null) {
         newTask.completed,
         newTask.color,
         newTask.description ? 1 : 0,
+        newTask.due_date,
       );
 
       if (newEvent) {
@@ -436,7 +418,7 @@ async function addTask(inputElement, taskContainer, dueDate = null) {
         taskContainer.appendChild(newEvent);
       }
       inputElement.value = "";
-      updateTabTitle(countTodayTasks()); // Use frontend count
+      updateTabTitle();
     } catch (error) {
       console.error("Error adding task:", error);
     }
@@ -455,21 +437,20 @@ function attachTaskEventListeners(eventElement, taskId) {
 
 async function renderInbox() {
   const lang = localStorage.getItem("language") || "ru";
-  const inboxTitle = await fetchInboxTitle();
-  inboxDiv.innerHTML = ""; // Clear existing content
+  const inboxTitle = await requestInboxTitle();
+  inboxDiv.innerHTML = "";
   inboxDiv.style.backgroundColor = body.classList.contains("dark-theme")
     ? "var(--inbox-bg-dark)"
-    : "var(--inbox-bg-light)"; // Apply initial style
+    : "var(--inbox-bg-light)";
 
   const headerDiv = document.createElement("div");
   headerDiv.classList.add("inbox-header");
-  headerDiv.style.textAlign = "left"; // Ensure it's left by default
+  headerDiv.style.textAlign = "left";
   headerDiv.textContent = inboxTitle;
   inboxDiv.appendChild(headerDiv);
 
   inboxHeaderElement = headerDiv;
 
-  // Make Inbox title editable
   inboxHeaderElement.addEventListener("click", () => {
     if (!isEditingInboxTitle) {
       makeInboxTitleEditable();
@@ -478,8 +459,7 @@ async function renderInbox() {
 
   inboxDiv.addEventListener("dragover", allowDrop);
   inboxDiv.addEventListener("drop", handleDrop);
-  // Fetch inbox tasks
-  const inboxTasks = await fetchInboxTasks();
+  const inboxTasks = await requestInboxTasks();
   const taskContainer = document.createElement("div");
   inboxDiv.appendChild(taskContainer);
   await renderTasks(inboxTasks, taskContainer);
@@ -492,19 +472,13 @@ async function renderInbox() {
   inboxInputElement = inboxForm.querySelector('input[type="text"]');
 
   const handleInboxTaskEvent = async (event) => {
-    await handleAddTaskEvent(event, inboxInputElement, taskContainer);
+    await handleAddTaskInput(event, inboxInputElement, taskContainer);
   };
 
-  // Add task on form submit
   inboxForm.addEventListener("submit", handleInboxTaskEvent);
-
-  // Add task on enter key press
   inboxInputElement.addEventListener("keydown", handleInboxTaskEvent);
-
-  // Add task on input blur (unfocus)
   inboxInputElement.addEventListener("blur", handleInboxTaskEvent);
 
-  // Focus task input when clicking in the inbox container
   inboxDiv.addEventListener("click", (event) => {
     if (
       event.target === inboxDiv ||
@@ -517,7 +491,7 @@ async function renderInbox() {
 }
 
 function makeInboxTitleEditable() {
-  if (isEditingInboxTitle) return; // Prevent concurrent edits
+  if (isEditingInboxTitle) return;
   isEditingInboxTitle = true;
 
   const currentTitle = inboxHeaderElement.textContent;
@@ -525,7 +499,7 @@ function makeInboxTitleEditable() {
   inputElement.type = "text";
   inputElement.value = currentTitle;
   inputElement.classList.add("inbox-title-input");
-  inputElement.style.textAlign = "left"; // Keep the text left-aligned
+  inputElement.style.textAlign = "left";
 
   inboxHeaderElement.innerHTML = "";
   inboxHeaderElement.appendChild(inputElement);
@@ -534,12 +508,12 @@ function makeInboxTitleEditable() {
   const handleSave = async () => {
     const newTitle = inputElement.value.trim();
     inboxHeaderElement.innerHTML = "";
-    inboxHeaderElement.style.textAlign = "left"; // Ensure it's left by default
+    inboxHeaderElement.style.textAlign = "left";
 
     if (newTitle !== currentTitle) {
       try {
         await saveInboxTitle(newTitle);
-        inboxHeaderElement.textContent = newTitle; // Set the new title immediately
+        inboxHeaderElement.textContent = newTitle;
       } catch (error) {
         console.error("Error saving inbox title", error);
         inboxHeaderElement.textContent = currentTitle;
@@ -551,9 +525,9 @@ function makeInboxTitleEditable() {
   };
 
   const handleCancel = () => {
-    inboxHeaderElement.innerHTML = ""; // Clear the input
-    inboxHeaderElement.textContent = currentTitle; // Revert to original title
-    inboxHeaderElement.style.textAlign = "left"; // Ensure it's left by default
+    inboxHeaderElement.innerHTML = "";
+    inboxHeaderElement.textContent = currentTitle;
+    inboxHeaderElement.style.textAlign = "left";
     isEditingInboxTitle = false;
   };
 
@@ -585,8 +559,7 @@ async function saveInboxTitle(newTitle) {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    currentInboxTitle = newTitle; // Update currentInboxTitle after successful save
-    // No need to update inboxHeaderElement.textContent here, it's done in handleSave
+    currentInboxTitle = newTitle;
     return;
   } catch (error) {
     console.error("Error updating inbox title:", error);
@@ -596,25 +569,22 @@ async function saveInboxTitle(newTitle) {
   }
 }
 
-async function renderCalendarWeek(date) {
+async function renderWeekCalendar(date) {
   const lang = localStorage.getItem("language") || "ru";
-  const dates = getDatesForWeek(new Date(date));
+  const dates = getWeekDates(new Date(date));
   displayedWeekStartDate = dates[0];
 
   const firstDayOfMonth = dates[0];
   const lastDayOfMonth = dates[6];
 
-  // Get month and year elements
   const monthSpan = monthNameElement.querySelector(".month");
   const yearSpan = monthNameElement.querySelector(".year");
 
   let monthPart, yearPart;
   if (firstDayOfMonth.getMonth() === lastDayOfMonth.getMonth()) {
-    // Single month case
     monthPart = translations[lang].monthNames[firstDayOfMonth.getMonth()];
     yearPart = firstDayOfMonth.getFullYear().toString();
   } else {
-    // Cross-month case
     const firstMonthName =
       translations[lang].monthNames[firstDayOfMonth.getMonth()];
     const lastMonthName =
@@ -629,27 +599,23 @@ async function renderCalendarWeek(date) {
         : `${firstYear} - ${lastYear}`;
   }
 
-  // Update separated elements
   monthSpan.textContent = monthPart;
   yearSpan.textContent = yearPart;
 
-  const isThisCurrentWeek = isCurrentWeek(displayedWeekStartDate);
+  const isThisCurrentWeek = isDateCurrentWeek(displayedWeekStartDate);
   monthNameElement.classList.toggle("inactive-highlight", !isThisCurrentWeek);
 
-  // Fetch tasks for the week
   const startDate = dates[0].toLocaleDateString("en-CA");
   const endDate = dates[6].toLocaleDateString("en-CA");
-  const weekTasks = await fetchTasks(startDate, endDate);
-  currentWeekTasks = weekTasks; // Store fetched tasks in global variable
+  const weekTasks = await requestTasksForWeek(startDate, endDate);
+  currentWeekTasks = weekTasks;
 
-  // Clear existing day elements
   Object.values(dayElements).forEach((dayElement) => {
     dayElement.innerHTML = "";
   });
 
   const today = new Date();
 
-  // Render each day of the week
   for (let index = 0; index < dates.length; index++) {
     const date = dates[index];
     const dayId = dayIds[index];
@@ -660,7 +626,6 @@ async function renderCalendarWeek(date) {
     dayDiv.addEventListener("dragover", allowDrop);
     dayDiv.addEventListener("drop", handleDrop);
 
-    // Create day header
     const dayHeaderDiv = document.createElement("div");
     dayHeaderDiv.classList.add("day-header");
     if (isThisCurrentWeek && date.toDateString() === today.toDateString()) {
@@ -672,11 +637,9 @@ async function renderCalendarWeek(date) {
     dayHeaderDiv.innerHTML = `<span class="day-number">${date.getDate()}</span><span class="day-weekday">${weekdayName}</span>`;
     dayDiv.appendChild(dayHeaderDiv);
 
-    // Create task container
     const taskContainer = document.createElement("div");
     dayDiv.appendChild(taskContainer);
 
-    // Filter and sort tasks
     const dailyTasks = weekTasks.filter((task) => {
       if (!task.due_date) return false;
       const dateParts = task.due_date.split("-");
@@ -697,13 +660,11 @@ async function renderCalendarWeek(date) {
     dailyTasks.sort((a, b) => a.order - b.order);
     await renderTasks(dailyTasks, taskContainer);
 
-    // Create new task form
     const newTaskForm = document.createElement("form");
     newTaskForm.classList.add("new-task-form");
     newTaskForm.innerHTML = `<input type="text" placeholder="${translations[lang].newTask}">`;
     dayDiv.appendChild(newTaskForm);
 
-    // Input handling
     dayDiv.addEventListener("click", (event) => {
       if (
         event.target === dayDiv ||
@@ -716,7 +677,7 @@ async function renderCalendarWeek(date) {
 
     const newTaskInput = newTaskForm.querySelector("input");
     const addTaskHandler = async (event) => {
-      await handleAddTaskEvent(
+      await handleAddTaskInput(
         event,
         newTaskInput,
         taskContainer,
@@ -728,18 +689,10 @@ async function renderCalendarWeek(date) {
     newTaskInput.addEventListener("keydown", addTaskHandler);
     newTaskInput.addEventListener("blur", addTaskHandler);
   }
-  updateTabTitle(countTodayTasks()); // Use frontend count
+  updateTabTitle();
 }
 
-function countTodayTasks() {
-  const incompleteTasksCount = todayTasks.filter(
-    (task) => task.completed === 0,
-  ).length;
-  todayTasksCount = incompleteTasksCount;
-  return todayTasksCount;
-}
-
-async function handleAddTaskEvent(
+async function handleAddTaskInput(
   event,
   inputElement,
   taskContainer,
@@ -752,8 +705,7 @@ async function handleAddTaskEvent(
   ) {
     event.preventDefault();
     if (inputElement.value.trim()) {
-      // Only add task if input is not empty after trim
-      await addTask(inputElement, taskContainer, dueDate);
+      await createTask(inputElement, taskContainer, dueDate);
     }
   }
 }
@@ -761,7 +713,7 @@ async function handleAddTaskEvent(
 async function renderTasks(tasks, container) {
   if (!tasks || tasks.length === 0) return;
 
-  container.innerHTML = ""; // Clear existing tasks before re-rendering
+  container.innerHTML = "";
 
   for (const task of tasks) {
     const eventDiv = await createEventElement(
@@ -770,6 +722,7 @@ async function renderTasks(tasks, container) {
       task.completed,
       task.color,
       task.description ? 1 : 0,
+      task.due_date,
     );
     if (eventDiv) {
       attachTaskEventListeners(eventDiv, task.id);
@@ -784,6 +737,7 @@ async function createEventElement(
   completed = 0,
   color = "",
   has_description = 0,
+  dueDate,
 ) {
   return new Promise((resolve) => {
     const eventDiv = document.createElement("div");
@@ -796,8 +750,8 @@ async function createEventElement(
     if (color) {
       eventDiv.dataset.taskColor = color;
     }
-    if (taskDetailsDateInput.dataset.selectedDate) {
-      eventDiv.dataset.dueDate = taskDetailsDateInput.dataset.selectedDate;
+    if (dueDate) {
+      eventDiv.dataset.dueDate = dueDate;
     }
 
     eventDiv.draggable = true;
@@ -847,7 +801,6 @@ async function createEventElement(
     }
     eventContent.appendChild(taskTextElement);
 
-    // Add description icon if the task has a description
     if (has_description) {
       const descriptionIcon = document.createElement("i");
       descriptionIcon.classList.add(
@@ -856,7 +809,7 @@ async function createEventElement(
         "description-icon",
       );
       descriptionIcon.title = "This task has a description";
-      eventContent.appendChild(descriptionIcon); // Add the icon before the action buttons
+      eventContent.appendChild(descriptionIcon);
     }
 
     const rightActionButtons = document.createElement("div");
@@ -867,7 +820,7 @@ async function createEventElement(
     deleteButton.innerHTML = '<i class="fas fa-times"></i>';
     deleteButton.addEventListener("click", (event) => {
       event.stopPropagation();
-      handleDeleteTask(taskId);
+      deleteTask(taskId);
     });
     rightActionButtons.appendChild(deleteButton);
 
@@ -888,7 +841,6 @@ async function openTaskDetails(taskId) {
     const task = await response.json();
 
     const isCompleted = task.completed === 1;
-    // Make title editable
     taskDetailsTitle.innerHTML = "";
     const titleInput = document.createElement("input");
     titleInput.type = "text";
@@ -903,12 +855,10 @@ async function openTaskDetails(taskId) {
         await updateTaskDetails(taskId, {
           title: newTitle,
         });
-        // Update in currentWeekTasks
         const taskIndex = currentWeekTasks.findIndex((t) => t.id === taskId);
         if (taskIndex !== -1) {
           currentWeekTasks[taskIndex].title = newTitle;
         }
-        // Update in todayTasks if present
         const todayTaskIndex = todayTasks.findIndex((t) => t.id === taskId);
         if (todayTaskIndex !== -1) {
           todayTasks[todayTaskIndex].title = newTitle;
@@ -925,7 +875,6 @@ async function openTaskDetails(taskId) {
 
     titleInput.addEventListener("blur", handleTitleBlur);
 
-    // Populate date input
     if (task.due_date) {
       datePickerCurrentDate = new Date(task.due_date);
       taskDetailsDateInput.dataset.selectedDate = task.due_date;
@@ -944,7 +893,7 @@ async function openTaskDetails(taskId) {
           localStorage.getItem("language") || "ru"
         ].datePickerSetDate;
     }
-    renderDatePicker(); // Render datepicker initially
+    renderDatePicker();
     taskDetailsPopupOverlay.style.display = "flex";
 
     const updateTaskDateAndRefresh = async (newDate) => {
@@ -963,22 +912,19 @@ async function openTaskDetails(taskId) {
         await updateTaskDetails(currentTaskBeingViewed, {
           due_date: newDate,
         });
-        // Update in currentWeekTasks
         const taskIndex = currentWeekTasks.findIndex((t) => t.id === taskId);
         if (taskIndex !== -1) {
           currentWeekTasks[taskIndex].due_date = newDate;
         }
 
         if (wasTodayTask && !isTodayTask) {
-          // Date changed from today
           todayTasks = todayTasks.filter(
             (task) => task.id !== currentTaskBeingViewed,
           );
         } else if (!wasTodayTask && isTodayTask) {
-          // Date changed to today
           const taskDetails = await fetchTaskDetailsById(
             currentTaskBeingViewed,
-          ); // Re-fetch for latest data
+          );
           if (taskDetails) {
             todayTasks.push(taskDetails);
           }
@@ -988,11 +934,10 @@ async function openTaskDetails(taskId) {
           taskElement.dataset.dueDate = newDate;
         }
 
-        // Re-render calendar to reflect changes
         if (newDate) {
           const newDueDate = new Date(newDate);
-          const firstDayOfNewWeek = getDatesForWeek(newDueDate)[0];
-          const firstDayOfDisplayedWeek = getDatesForWeek(
+          const firstDayOfNewWeek = getWeekDates(newDueDate)[0];
+          const firstDayOfDisplayedWeek = getWeekDates(
             displayedWeekStartDate,
           )[0];
 
@@ -1006,25 +951,24 @@ async function openTaskDetails(taskId) {
             )
           ) {
             displayedWeekStartDate = firstDayOfNewWeek;
-            await renderCalendarWeek(displayedWeekStartDate);
+            await renderWeekCalendar(displayedWeekStartDate);
           } else {
-            await renderCalendarWeek(displayedWeekStartDate);
+            await renderWeekCalendar(displayedWeekStartDate);
           }
         }
       }
-      await renderInbox(); // Re-render inbox to remove task or add if date is null
+      await renderInbox();
       highlightTask(currentTaskBeingViewed);
     };
 
     const descriptionText = task.description || "";
     taskDescriptionTextarea.value = descriptionText;
 
-    // Adjust textarea height initially based on content when popup opens
-    adjustTextareaHeight(); // CALL adjustTextareaHeight() **BEFORE** setting rendered content and height!
+    adjustTextareaHeight();
     taskDescriptionRendered.innerHTML = marked.parse(descriptionText);
-    taskDescriptionRendered.style.height = descriptionHeight; // Set initial height for rendered as well
+    taskDescriptionRendered.style.height = descriptionHeight;
 
-    isDescriptionRenderedMode = false; // Initialize to editable mode
+    isDescriptionRenderedMode = false;
     taskDescriptionRendered.style.display = "none";
     taskDescriptionTextarea.style.display = "block";
     toggleDescriptionModeBtn.classList.remove("rendered-mode");
@@ -1032,7 +976,6 @@ async function openTaskDetails(taskId) {
 
     taskDetailsPopupOverlay.style.display = "flex";
 
-    // Set up color swatches
     const colorSwatches = document.querySelectorAll(".color-swatch");
     colorSwatches.forEach((swatch) => {
       swatch.onclick = async (event) => {
@@ -1045,12 +988,10 @@ async function openTaskDetails(taskId) {
           await updateTaskDetails(currentTaskBeingViewed, {
             color: color,
           });
-          // Update in currentWeekTasks
           const taskIndex = currentWeekTasks.findIndex((t) => t.id === taskId);
           if (taskIndex !== -1) {
             currentWeekTasks[taskIndex].color = color;
           }
-          // No need to update color in todayTasks as it's not used for counting
           const taskElement = document.querySelector(
             `.event[data-task-id="${currentTaskBeingViewed}"]`,
           );
@@ -1071,9 +1012,7 @@ async function openTaskDetails(taskId) {
 
     adjustTextareaHeight();
 
-    // Set initial state for Mark as Done button in popup
     updateMarkAsDoneButton(isCompleted);
-    // Always show recurring and reminder icons (for decorative purpose)
     recurringTaskDetailsBtn.style.display = "inline-block";
     reminderTaskDetailsBtn.style.display = "inline-block";
   } catch (error) {
@@ -1110,22 +1049,22 @@ function getTaskBackgroundColor(color) {
 function updateMarkAsDoneButton(isCompleted) {
   if (isCompleted) {
     markDoneTaskDetailsBtn.dataset.completed = 1;
-    markDoneTaskDetailsBtn.innerHTML = '<i class="fas fa-check-circle"></i>'; // Checkmark icon for "Undone" state
+    markDoneTaskDetailsBtn.innerHTML = '<i class="fas fa-check-circle"></i>';
     markDoneTaskDetailsBtn.title = "Mark as undone";
   } else {
-    markDoneTaskDetailsBtn.innerHTML = '<i class="far fa-check-circle"></i>'; // Outline checkmark icon for "Done" state
+    markDoneTaskDetailsBtn.innerHTML = '<i class="far fa-check-circle"></i>';
     markDoneTaskDetailsBtn.title = "Mark as done";
     markDoneTaskDetailsBtn.dataset.completed = 0;
   }
 }
 
-function updateTaskEventDisplay(taskElement, completed) {
+function updateTaskCompletionDisplay(taskElement, completed) {
   handleTaskCompletionUI(taskElement, completed);
 }
 
 function closeTaskDetailsPopup() {
   taskDetailsPopupOverlay.style.display = "none";
-  datePickerContainer.style.display = "none"; // Hide date picker when popup closes
+  datePickerContainer.style.display = "none";
   datePickerVisible = false;
   currentTaskBeingViewed = null;
 }
@@ -1172,16 +1111,15 @@ async function updateTaskDetails(taskId, updates) {
 }
 
 function adjustTextareaHeight() {
-  taskDescriptionTextarea.style.height = "auto"; // Reset height to recalculate
+  taskDescriptionTextarea.style.height = "auto";
   let scrollHeight = taskDescriptionTextarea.scrollHeight;
   let newHeight = scrollHeight;
 
-  // Apply minimum and maximum height constraints
   newHeight = Math.max(parseInt(minDescriptionHeight), newHeight);
 
   taskDescriptionTextarea.style.height = `${newHeight}px`;
-  descriptionHeight = `${newHeight}px`; // Update stored height
-  taskDescriptionRendered.style.height = descriptionHeight; // Keep rendered height in sync
+  descriptionHeight = `${newHeight}px`;
+  taskDescriptionRendered.style.height = descriptionHeight;
 }
 
 taskDescriptionTextarea.addEventListener("input", () => {
@@ -1193,22 +1131,19 @@ taskDescriptionTextarea.addEventListener("blur", async (event) => {
     await updateTaskDetails(currentTaskBeingViewed, {
       description: event.target.value,
     });
-    // Update in currentWeekTasks
     const taskIndex = currentWeekTasks.findIndex(
       (t) => t.id === currentTaskBeingViewed,
     );
     if (taskIndex !== -1) {
       currentWeekTasks[taskIndex].description = event.target.value;
     }
-    // No need to update description in todayTasks as it's not used for counting
-    // Re-render markdown when textarea blurs only if in rendered mode
     if (isDescriptionRenderedMode) {
       const descriptionText = event.target.value || "";
       const renderedDescription = marked.parse(descriptionText);
       taskDescriptionRendered.innerHTML = renderedDescription;
-      adjustTextareaHeight(); // Re-adjust height after blur in rendered mode
+      adjustTextareaHeight();
     } else {
-      adjustTextareaHeight(); // Re-adjust height after blur in edit mode as well
+      adjustTextareaHeight();
     }
   }
 });
@@ -1226,16 +1161,15 @@ taskDetailsPopupOverlay.addEventListener("click", (event) => {
 
 deleteTaskDetailsBtn.addEventListener("click", async () => {
   if (currentTaskBeingViewed) {
-    await handleDeleteTask(currentTaskBeingViewed);
+    deleteTask(currentTaskBeingViewed);
     closeTaskDetailsPopup();
   }
 });
 
 toggleDescriptionModeBtn.addEventListener("click", () => {
-  isDescriptionRenderedMode = !isDescriptionRenderedMode; // Toggle the mode
+  isDescriptionRenderedMode = !isDescriptionRenderedMode;
 
   if (isDescriptionRenderedMode) {
-    // Switch to Rendered (View) Mode
     const descriptionText = taskDescriptionTextarea.value || "";
     const renderedDescription = marked.parse(descriptionText);
     taskDescriptionRendered.innerHTML = renderedDescription;
@@ -1243,16 +1177,15 @@ toggleDescriptionModeBtn.addEventListener("click", () => {
     taskDescriptionTextarea.style.display = "none";
     toggleDescriptionModeBtn.classList.add("rendered-mode");
     descriptionModeIcon.style.color = "";
-    taskDescriptionRendered.style.height = descriptionHeight; // Apply stored height
+    taskDescriptionRendered.style.height = descriptionHeight;
   } else {
-    // Switch to Edit Mode
     taskDescriptionRendered.style.display = "none";
     taskDescriptionTextarea.style.display = "block";
     toggleDescriptionModeBtn.classList.remove("rendered-mode");
     descriptionModeIcon.style.color = "";
-    taskDescriptionTextarea.style.height = descriptionHeight; // Apply stored height
-    taskDescriptionTextarea.focus(); // Focus on textarea for editing
-    adjustTextareaHeight(); // Adjust height when switching back to edit mode
+    taskDescriptionTextarea.style.height = descriptionHeight;
+    taskDescriptionTextarea.focus();
+    adjustTextareaHeight();
   }
 });
 
@@ -1280,7 +1213,7 @@ async function handleDrop(event) {
     return;
   }
 
-  const dropTarget = event.target;
+  let dropTarget = event.target;
   const taskId = currentlyDraggedTask.dataset.taskId;
   let newDueDate = null;
   let targetContainerElement = null;
@@ -1295,13 +1228,23 @@ async function handleDrop(event) {
     targetContainerElement = inboxDiv.querySelector(
       ":scope > div:not(.inbox-header):not(.new-task-form)",
     );
+  } else if (
+    dropTarget.classList.contains("day-header") ||
+    dropTarget.classList.contains("day-number") ||
+    dropTarget.classList.contains("day-weekday")
+  ) {
+    dropTarget = dropTarget.closest(".day");
+    newDueDate = dropTarget.dataset.date;
+    targetContainerElement = dropTarget.querySelector(
+      ":scope > div:not(.day-header):not(.new-task-form)",
+    );
   } else if (dropTarget.closest(".day")) {
     newDueDate = dropTarget.closest(".day").dataset.date;
     targetContainerElement = dropTarget
       .closest(".day")
       .querySelector(":scope > div:not(.day-header):not(.new-task-form)");
   } else if (dropTarget.closest(".inbox")) {
-    newDueDate = null;
+    newDueDate = dropTarget.closest(".inbox").dataset.date;
     targetContainerElement = inboxDiv.querySelector(
       ":scope > div:not(.inbox-header):not(.new-task-form)",
     );
@@ -1309,7 +1252,7 @@ async function handleDrop(event) {
 
   if (taskId && targetContainerElement) {
     try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
+      await fetch(`/api/tasks/${taskId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -1318,30 +1261,18 @@ async function handleDrop(event) {
           due_date: newDueDate,
         }),
       });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
 
-      // Update todayTasks based on date change
-      const wasTodayTask =
-        currentlyDraggedTask.dataset.dueDate ===
-        new Date().toLocaleDateString("en-CA");
-      const isTodayTask = newDueDate === new Date().toLocaleDateString("en-CA");
+      const todayString = new Date().toLocaleDateString("en-CA");
+      const wasTodayTask = currentlyDraggedTask.dataset.dueDate === todayString;
+      const isTodayTask = newDueDate === todayString;
 
       if (wasTodayTask && !isTodayTask) {
-        // Moved from today to another day/inbox
         todayTasks = todayTasks.filter((task) => task.id !== parseInt(taskId));
       } else if (!wasTodayTask && isTodayTask) {
-        // Moved to today from another day/inbox
-        const taskDetails = await fetchTaskDetailsById(taskId); // Re-fetch to get latest task data
+        const taskDetails = await fetchTaskDetailsById(taskId);
         if (taskDetails) {
           todayTasks.push(taskDetails);
         }
-      }
-      // Update in currentWeekTasks
-      const taskIndex = currentWeekTasks.findIndex((t) => t.id === taskId);
-      if (taskIndex !== -1) {
-        currentWeekTasks[taskIndex].due_date = newDueDate;
       }
 
       const rect = targetContainerElement.getBoundingClientRect();
@@ -1371,7 +1302,8 @@ async function handleDrop(event) {
       console.error("Error updating task due date:", error);
     }
   }
-  updateTabTitle(countTodayTasks()); // Use frontend count
+  await refreshTodayTasks();
+  updateTabTitle();
 }
 
 function animateDrop(element, container) {
@@ -1400,21 +1332,19 @@ async function handleTaskCompletion(taskId, completed) {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    // Update todayTasks locally if task is in it
     const taskToUpdateIndex = todayTasks.findIndex(
       (task) => task.id === taskId,
     );
     if (taskToUpdateIndex !== -1) {
       todayTasks[taskToUpdateIndex].completed = completed;
     }
-    // Update in currentWeekTasks
     const taskIndex = currentWeekTasks.findIndex((t) => t.id === taskId);
     if (taskIndex !== -1) {
       currentWeekTasks[taskIndex].completed = completed;
     }
 
     const taskElement = document.querySelector(
-      `.event[data-task-id="${taskId}"]`, // Correct selector here
+      `.event[data-task-id="${taskId}"]`,
     );
     if (taskElement) {
       handleTaskCompletionUI(taskElement, completed);
@@ -1422,7 +1352,7 @@ async function handleTaskCompletion(taskId, completed) {
   } catch (error) {
     console.error("Error updating task completion:", error);
   }
-  updateTabTitle(countTodayTasks()); // Use frontend count
+  updateTabTitle();
 }
 
 function handleTaskCompletionUI(taskElement, completed) {
@@ -1433,10 +1363,10 @@ function handleTaskCompletionUI(taskElement, completed) {
   doneButton.style.display = completed === 1 ? "none" : "inline-block";
   undoneButton.style.display = completed === 0 ? "none" : "inline-block";
   if (currentTaskBeingViewed === parseInt(taskElement.dataset.taskId)) {
-    updateMarkAsDoneButton(completed === 1); // Update popup button too
+    updateMarkAsDoneButton(completed === 1);
   }
 }
-async function handleDeleteTask(taskId) {
+async function deleteTask(taskId) {
   try {
     const response = await fetch(`/api/tasks/${taskId}`, {
       method: "DELETE",
@@ -1444,9 +1374,7 @@ async function handleDeleteTask(taskId) {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    // Update todayTasks locally if task is in it
     todayTasks = todayTasks.filter((task) => task.id !== taskId);
-    // Update currentWeekTasks
     currentWeekTasks = currentWeekTasks.filter((task) => task.id !== taskId);
 
     const taskElement = document.querySelector(
@@ -1454,7 +1382,7 @@ async function handleDeleteTask(taskId) {
     );
     if (taskElement) {
       taskElement.remove();
-      updateTabTitle(countTodayTasks()); // Use frontend count
+      updateTabTitle();
     }
   } catch (error) {
     console.error("Error deleting task:", error);
@@ -1479,7 +1407,6 @@ async function updateTaskOrder(taskContainer) {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    // No need to update currentWeekTasks for order change as it doesn't affect today's count
   } catch (error) {
     console.error("Error updating task order:", error);
   }
@@ -1487,6 +1414,8 @@ async function updateTaskOrder(taskContainer) {
 
 function setTheme(theme) {
   currentTheme = theme;
+  let resolvedTheme = theme;
+
   if (theme === "dark") {
     body.classList.add("dark-theme");
   } else if (theme === "light") {
@@ -1497,10 +1426,14 @@ function setTheme(theme) {
       window.matchMedia("(prefers-color-scheme: dark)").matches;
     if (prefersDark) {
       body.classList.add("dark-theme");
+      resolvedTheme = "dark";
     } else {
       body.classList.remove("dark-theme");
+      resolvedTheme = "light";
     }
+    currentTheme = resolvedTheme;
   }
+
   document.querySelectorAll(".event").forEach((event) => {
     const color = event.dataset.taskColor;
     event.style.backgroundColor = getTaskBackgroundColor(color);
@@ -1510,6 +1443,7 @@ function setTheme(theme) {
       ? "var(--inbox-bg-dark)"
       : "var(--inbox-bg-light)";
   }
+  updateTabTitle();
 }
 
 function setLanguage(lang) {
@@ -1517,9 +1451,9 @@ function setLanguage(lang) {
   if (inboxInputElement) {
     inboxInputElement.placeholder = translations[lang].newTaskSomeday;
   }
-  renderCalendarWeek(displayedWeekStartDate);
+  renderWeekCalendar(displayedWeekStartDate);
   updateSettingsText();
-  renderDatePicker(); // Re-render datepicker on language change
+  renderDatePicker();
 }
 
 async function initializeCalendar() {
@@ -1534,11 +1468,11 @@ async function initializeCalendar() {
   fullWeekdaysCheckbox.checked = displayFullWeekdays;
   wrapTaskTitlesCheckbox.checked = wrapTaskTitles;
 
-  await renderCalendarWeek(currentDate);
+  await renderWeekCalendar(currentDate);
   await renderInbox();
   await renderAllTasks();
-  await fetchAndSetTodayTasks();
-  updateTabTitle(countTodayTasks());
+  await refreshTodayTasks();
+  updateTabTitle();
 
   if (storedTheme === "auto") {
     window
@@ -1548,26 +1482,25 @@ async function initializeCalendar() {
       });
   }
 
-  // ** Add event listener to monthNameElement for click **
-  monthNameElement.addEventListener("click", handleMonthNameClick);
+  monthNameElement.addEventListener("click", resetCalendarToCurrentWeek);
 
-  setupSSE(); // Setup SSE connection
+  setupSSE();
 }
 
-async function fetchAndSetTodayTasks() {
+async function refreshTodayTasks() {
   const today = new Date();
   const todayString = today.toLocaleDateString("en-CA");
   try {
-    const tasks = await fetchTasks(todayString, todayString);
-    todayTasks = tasks; // Populate todayTasks array
+    const tasks = await requestTasksForWeek(todayString, todayString);
+    todayTasks = tasks;
   } catch (error) {
     console.error("Error fetching today's tasks:", error);
-    todayTasks = []; // Initialize to empty array in case of error
+    todayTasks = [];
   }
+  updateTabTitle();
 }
 
 async function renderAllTasks() {
-  // Re-render all tasks in calendar and inbox to apply display settings
   for (const dayId of dayIds) {
     const dayDiv = dayElements[dayId];
     const taskContainer = dayDiv.querySelector(
@@ -1575,11 +1508,11 @@ async function renderAllTasks() {
     );
     if (taskContainer) {
       const taskElements = Array.from(taskContainer.children);
-      taskContainer.innerHTML = ""; // Clear existing tasks
+      taskContainer.innerHTML = "";
       for (const taskElement of taskElements) {
         const taskId = taskElement.dataset.taskId;
         if (taskId) {
-          const taskDetails = await fetchTaskDetailsById(taskId); // Fetch task details to re-create event element
+          const taskDetails = await fetchTaskDetailsById(taskId);
           if (taskDetails) {
             const newEvent = await createEventElement(
               taskDetails.title,
@@ -1587,6 +1520,7 @@ async function renderAllTasks() {
               taskDetails.completed,
               taskDetails.color,
               taskDetails.description ? 1 : 0,
+              taskDetails.due_date,
             );
             if (newEvent) {
               attachTaskEventListeners(newEvent, taskDetails.id);
@@ -1597,13 +1531,12 @@ async function renderAllTasks() {
       }
     }
   }
-  // Re-render inbox tasks
   const inboxTaskContainer = inboxDiv.querySelector(
     ":scope > div:not(.inbox-header):not(.new-task-form)",
   );
   if (inboxTaskContainer) {
     const inboxTaskElements = Array.from(inboxTaskContainer.children);
-    inboxTaskContainer.innerHTML = ""; // Clear inbox tasks
+    inboxTaskContainer.innerHTML = "";
     for (const taskElement of inboxTaskElements) {
       const taskId = taskElement.dataset.taskId;
       if (taskId) {
@@ -1615,6 +1548,7 @@ async function renderAllTasks() {
             taskDetails.completed,
             taskDetails.color,
             taskDetails.description ? 1 : 0,
+            taskDetails.due_date,
           );
           if (newEvent) {
             attachTaskEventListeners(newEvent, taskDetails.id);
@@ -1639,18 +1573,16 @@ async function fetchTaskDetailsById(taskId) {
   }
 }
 
-function handleMonthNameClick() {
+function resetCalendarToCurrentWeek() {
   currentDate = new Date();
   displayedWeekStartDate = new Date(currentDate);
-  renderCalendarWeek(currentDate);
+  renderWeekCalendar(currentDate);
 }
-
-// *** FUZZY SEARCH FUNCTIONS ***
 
 async function displayFuzzySearchResults(query) {
   if (query.length === 0) {
-    fuzzySearchResultsList.innerHTML = ""; // Clear results if query is empty
-    return; // Return early if query is empty
+    fuzzySearchResultsList.innerHTML = "";
+    return;
   }
 
   try {
@@ -1662,7 +1594,7 @@ async function displayFuzzySearchResults(query) {
     }
     const tasks = await response.json();
 
-    fuzzySearchResultsList.innerHTML = ""; // Clear results before adding new ones
+    fuzzySearchResultsList.innerHTML = "";
 
     if (tasks.length === 0) {
       const noResultsItem = document.createElement("li");
@@ -1680,7 +1612,7 @@ async function displayFuzzySearchResults(query) {
                 month: "short",
               },
             )
-          : currentInboxTitle; // Use currentInboxTitle when due_date is null
+          : currentInboxTitle;
         listItem.innerHTML = `
           <div class="fuzzy-search-task-title">${task.title}</div>
           <div class="fuzzy-search-task-date">${taskDate}</div>
@@ -1694,7 +1626,7 @@ async function displayFuzzySearchResults(query) {
           if (task.due_date) {
             currentDate = new Date(task.due_date);
             displayedWeekStartDate = new Date(currentDate);
-            renderCalendarWeek(currentDate);
+            renderWeekCalendar(currentDate);
             highlightTask(task.id);
           } else {
             inboxDiv.scrollIntoView({
@@ -1723,8 +1655,6 @@ function highlightTask(taskId) {
   }
 }
 
-// *** DATE PICKER FUNCTIONS ***
-
 function renderDatePicker() {
   const lang = localStorage.getItem("language") || "ru";
   const monthNames = translations[lang].monthNames;
@@ -1740,12 +1670,11 @@ function renderDatePicker() {
     0,
   ).getDate();
   const startDayOfWeek =
-    firstDayOfMonth.getDay() === 0 ? 6 : firstDayOfMonth.getDay() - 1; // Monday is 0
+    firstDayOfMonth.getDay() === 0 ? 6 : firstDayOfMonth.getDay() - 1;
 
   datePickerMonthYear.textContent = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
   datePickerGrid.innerHTML = "";
 
-  // Render day names
   for (let dayName of dayNamesShort) {
     const dayNameElement = document.createElement("div");
     dayNameElement.classList.add("date-picker-day-name");
@@ -1753,19 +1682,16 @@ function renderDatePicker() {
     datePickerGrid.appendChild(dayNameElement);
   }
 
-  // Render empty cells for days before the first day of the month
   for (let i = 0; i < startDayOfWeek; i++) {
     const emptyCell = document.createElement("div");
     emptyCell.classList.add("date-picker-day", "inactive");
     datePickerGrid.appendChild(emptyCell);
   }
 
-  // Render days of the month
   for (let day = 1; day <= daysInMonth; day++) {
     const dayElement = document.createElement("div");
     dayElement.classList.add("date-picker-day");
     dayElement.textContent = day;
-    // corrected date creation to prevent timezone issues
     const dayDate = new Date(
       Date.UTC(date.getFullYear(), date.getMonth(), day),
     );
@@ -1776,8 +1702,7 @@ function renderDatePicker() {
     ) {
       dayElement.classList.add("selected");
     }
-    // Highlight current day
-    const today = new Date(); // define today here!
+    const today = new Date();
     if (dayDate.toDateString() === today.toDateString()) {
       dayElement.classList.add("current-day");
     }
@@ -1801,10 +1726,10 @@ async function handleDateSelection(dateString) {
   );
   datePickerContainer.style.display = "none";
   datePickerVisible = false;
-  await updateTaskDateAndRefresh(dateString);
+  await updateTaskDueDate(dateString);
 }
 
-async function updateTaskDateAndRefresh(newDate) {
+async function updateTaskDueDate(newDate) {
   if (!currentTaskBeingViewed) return;
 
   if (currentTaskBeingViewed) {
@@ -1820,7 +1745,6 @@ async function updateTaskDateAndRefresh(newDate) {
       due_date: newDate,
     });
 
-    // Update in currentWeekTasks
     const taskIndex = currentWeekTasks.findIndex(
       (t) => t.id === currentTaskBeingViewed,
     );
@@ -1829,48 +1753,42 @@ async function updateTaskDateAndRefresh(newDate) {
     }
 
     if (wasTodayTask && !isTodayTask) {
-      // Date changed from today
       todayTasks = todayTasks.filter(
         (task) => task.id !== currentTaskBeingViewed,
       );
     } else if (!wasTodayTask && isTodayTask) {
-      // Date changed to today
-      const taskDetails = await fetchTaskDetailsById(currentTaskBeingViewed); // Re-fetch for latest data
+      const taskDetails = await fetchTaskDetailsById(currentTaskBeingViewed);
       if (taskDetails) {
         todayTasks.push(taskDetails);
       }
     }
-
-    // ... (rest of updateTaskDateAndRefresh - calendar re-rendering etc.) ...
-    updateTabTitle(countTodayTasks()); // Use frontend count - update title *after* todayTasks is updated!
+    updateTabTitle();
   }
 }
-
-// *** EVENT LISTENERS ***
 
 markDoneTaskDetailsBtn.addEventListener("click", async () => {
   if (!currentTaskBeingViewed) return;
   const isCompleted = markDoneTaskDetailsBtn.dataset.completed === "1";
   const newCompletedStatus = isCompleted ? 0 : 1;
-  await handleTaskCompletion(currentTaskBeingViewed, newCompletedStatus);
-  updateMarkAsDoneButton(newCompletedStatus === 1); // Update button appearance
+  handleTaskCompletion(currentTaskBeingViewed, newCompletedStatus);
+  updateMarkAsDoneButton(newCompletedStatus === 1);
   const taskElement = document.querySelector(
     `.event[data-task-id="${currentTaskBeingViewed}"]`,
   );
   if (taskElement) {
-    updateTaskEventDisplay(taskElement, newCompletedStatus);
+    updateTaskCompletionDisplay(taskElement, newCompletedStatus);
   }
 });
 taskDetailsDateInput.addEventListener("click", (event) => {
-  event.stopPropagation(); // Prevent popup overlay from closing datepicker immediately
+  event.stopPropagation();
   datePickerVisible = !datePickerVisible;
   datePickerContainer.style.display = datePickerVisible ? "block" : "none";
   if (datePickerVisible) {
-    renderDatePicker(); // Re-render on every open to reflect current month/year
+    renderDatePicker();
   }
 });
 datePickerContainer.addEventListener("click", (event) => {
-  event.stopPropagation(); // Prevent closing when clicking inside datepicker
+  event.stopPropagation();
 });
 
 document
@@ -1894,7 +1812,7 @@ document
       translations[localStorage.getItem("language") || "ru"].datePickerSetDate;
     datePickerContainer.style.display = "none";
     datePickerVisible = false;
-    await updateTaskDateAndRefresh(null);
+    await updateTaskDueDate(null);
   });
 
 searchBtn.addEventListener("click", () => {
@@ -1903,7 +1821,6 @@ searchBtn.addEventListener("click", () => {
   if (isSearchOpen) {
     fuzzySearchInput.focus();
   } else {
-    // Clear results when the popup is closed
     fuzzySearchResultsList.innerHTML = "";
     fuzzySearchInput.value = "";
   }
@@ -1918,7 +1835,6 @@ window.addEventListener("click", (event) => {
   ) {
     isSearchOpen = false;
     fuzzySearchPopup.style.display = "none";
-    // Clear results when the popup is closed by clicking outside
     fuzzySearchResultsList.innerHTML = "";
     fuzzySearchInput.value = "";
   }
@@ -1954,7 +1870,7 @@ Object.values(dayElements).forEach((dayDiv) => {
       if (taskDateInput) {
         taskDateInput.value = clickedDate;
         if (currentTaskBeingViewed) {
-          await updateTaskDateAndRefresh(clickedDate);
+          await updateTaskDueDate(clickedDate);
         }
       }
     }
@@ -1969,12 +1885,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
 prevWeekButton.addEventListener("click", () => {
   displayedWeekStartDate.setDate(displayedWeekStartDate.getDate() - 7);
-  renderCalendarWeek(displayedWeekStartDate);
+  renderWeekCalendar(displayedWeekStartDate);
 });
 
 nextWeekButton.addEventListener("click", () => {
   displayedWeekStartDate.setDate(displayedWeekStartDate.getDate() + 7);
-  renderCalendarWeek(displayedWeekStartDate);
+  renderWeekCalendar(displayedWeekStartDate);
 });
 
 settingsBtn.addEventListener("click", () => {
@@ -2025,10 +1941,10 @@ fullWeekdaysCheckbox.addEventListener("change", (event) => {
   handleCheckboxChange(event.target);
   displayFullWeekdays = event.target.checked;
   localStorage.setItem("fullWeekdays", displayFullWeekdays);
-  renderCalendarWeek(displayedWeekStartDate);
+  renderWeekCalendar(displayedWeekStartDate);
 });
 
-handleCheckboxChange(fullWeekdaysCheckbox); // Initialize state on load
+handleCheckboxChange(fullWeekdaysCheckbox);
 
 wrapTaskTitlesCheckbox.addEventListener("change", async (event) => {
   handleCheckboxChange(event.target);
@@ -2037,8 +1953,7 @@ wrapTaskTitlesCheckbox.addEventListener("change", async (event) => {
   await renderAllTasks();
 });
 
-handleCheckboxChange(wrapTaskTitlesCheckbox); // Initialize state on load
-// Set Wrap Task Titles checkbox to checked by default
+handleCheckboxChange(wrapTaskTitlesCheckbox);
 wrapTaskTitlesCheckbox.checked = true;
 handleCheckboxChange(wrapTaskTitlesCheckbox);
 
@@ -2064,20 +1979,17 @@ taskDetailsPopupOverlay.addEventListener("transitionend", () => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
-    // Close Task Details Popup
     if (taskDetailsPopupOverlay.style.display === "flex") {
       closeTaskDetailsPopup();
       return;
     }
 
-    // Close Settings Popup
     if (isSettingsOpen) {
       isSettingsOpen = false;
       settingsPopup.style.display = "none";
       return;
     }
 
-    // Close Date Picker
     if (datePickerVisible) {
       isSearchOpen = false;
       fuzzySearchPopup.style.display = "none";
@@ -2086,7 +1998,6 @@ document.addEventListener("keydown", (event) => {
       return;
     }
 
-    // Close Fuzzy Search Popup
     if (isSearchOpen) {
       isSearchOpen = false;
       fuzzySearchPopup.style.display = "none";
@@ -2097,48 +2008,96 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-function updateTabTitle(count) {
+function updateTabTitle() {
   let title =
     translations[localStorage.getItem("language") || "ru"].baseTitleName || "";
-  if (count > 1) {
-    const tasksLeftText =
-      translations[localStorage.getItem("language") || "ru"].tasksLeft ||
-      "tasks left";
-    title = `${count} ${tasksLeftText}`;
-  } else if (count == 1) {
-    const taskLeftText =
-      translations[localStorage.getItem("language") || "ru"].oneTaskLeft ||
-      "task left";
-    title = `${count} ${taskLeftText}`;
-  } else {
-    title =
-      translations[localStorage.getItem("language") || "ru"].noTodayTasks ||
-      "No tasks for today";
-  }
-
   document.title = title;
+  updateFavicon(todayTasks.filter((task) => task.completed === 0).length);
 }
 
 function setupSSE() {
-  eventSource = new EventSource("/api/events"); // Establish SSE connection
+  eventSource = new EventSource("/api/events");
 
-  eventSource.onopen = () => {
-    console.log("SSE connection opened");
-  };
+  eventSource.onopen = () => {};
 
   eventSource.onerror = (error) => {
     console.error("SSE error:", error);
     if (eventSource.readyState === EventSource.CLOSED) {
-      // Connection was closed, attempt to reconnect after a delay
-      console.log("SSE connection closed, attempting to reconnect...");
-      setTimeout(setupSSE, 5000); // Reconnect after 5 seconds
+      setTimeout(setupSSE, 5000);
     }
   };
 
   eventSource.addEventListener("date-change", async (event) => {
-    console.log("Received date-change event from SSE");
-    await fetchAndSetTodayTasks(); // Refetch tasks for the new "today"
-    updateTabTitle(countTodayTasks()); // Update tab title
-    renderCalendarWeek(currentDate); // Optionally re-render calendar week
+    await refreshTodayTasks();
+    updateTabTitle();
+    renderWeekCalendar(currentDate);
   });
+}
+
+const faviconColors = {
+  light: {
+    empty: "lightgreen",
+    singleDigit: "lightblue",
+    multiple: "lightgrey",
+    textColor: "#000000",
+  },
+  dark: {
+    empty: "#4CAF50",
+    singleDigit: "#64B5F6",
+    multiple: "#9E9E9E",
+    textColor: "#000000",
+  },
+};
+
+const faviconEmptyTasks = `<svg width="80" height="80" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="40" cy="40" r="40" fill="{fillColor}"/>
+    <text x="40" y="39" font-family="Arial" font-size="80" fill="{textColor}" text-anchor="middle" dominant-baseline="central">✓</text>
+    </svg>`;
+
+const faviconSingleDigitTasks = `<svg width="80" height="80" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="40" cy="40" r="40" fill="{fillColor}"/>
+    <text x="40" y="39" font-family="Arial" font-size="80" fill="{textColor}" text-anchor="middle" dominant-baseline="central">{count}</text>
+    </svg>`;
+
+const faviconMultipleTasks = `<svg width="80" height="80" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="40" cy="40" r="40" fill="{fillColor}"/>
+    <text x="40" y="39" font-family="Arial" font-size="80" fill="{textColor}" text-anchor="middle" dominant-baseline="central">∞</text>
+    </svg>`;
+
+function svgToDataUrl(svgString) {
+  const encodedSVG = encodeURIComponent(svgString);
+  return `data:image/svg+xml,${encodedSVG}`;
+}
+
+function updateFavicon(taskCount) {
+  let faviconUrl = "";
+  const themeColors =
+    currentTheme === "dark" ? faviconColors.dark : faviconColors.light;
+  const currentFaviconEmptyTasks = faviconEmptyTasks
+    .replace("{fillColor}", themeColors.empty)
+    .replace("{textColor}", themeColors.textColor);
+  const currentFaviconSingleDigitTasks = faviconSingleDigitTasks
+    .replace("{fillColor}", themeColors.singleDigit)
+    .replace("{textColor}", themeColors.textColor);
+  const currentFaviconMultipleTasks = faviconMultipleTasks
+    .replace("{fillColor}", themeColors.multiple)
+    .replace("{textColor}", themeColors.textColor);
+
+  if (taskCount === 0) {
+    faviconUrl = svgToDataUrl(currentFaviconEmptyTasks);
+  } else if (taskCount < 10 && taskCount > 0) {
+    faviconUrl = svgToDataUrl(
+      currentFaviconSingleDigitTasks.replace("{count}", taskCount.toString()),
+    );
+  } else if (taskCount >= 10) {
+    faviconUrl = svgToDataUrl(currentFaviconMultipleTasks);
+  }
+
+  let faviconLink = document.querySelector("link[rel='icon']");
+  if (!faviconLink) {
+    faviconLink = document.createElement("link");
+    faviconLink.rel = "icon";
+    document.head.appendChild(faviconLink);
+  }
+  faviconLink.href = faviconUrl;
 }
