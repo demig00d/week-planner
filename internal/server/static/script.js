@@ -133,7 +133,7 @@ const translations = {
     datePickerNavNext: "Next Month",
     datePickerSetDate: "Set Date",
     fullWeekdaysHeader: "Full weekday names",
-    wrapTaskTitlesHeader: "Wrap task titles",
+    wrapWeekTitlesHeader: "Wrap week titles",
     displayOptionsHeader: "Display",
     themeAuto: "Auto",
     themeLight: "Light",
@@ -183,7 +183,7 @@ const translations = {
     datePickerNavNext: "Следующий месяц",
     datePickerSetDate: "Назначить дату",
     fullWeekdaysHeader: "Полные названия дней недели",
-    wrapTaskTitlesHeader: "Переносить имя задач на следующую строку",
+    wrapWeekTitlesHeader: "Переносить имя недель на следующую строку",
     displayOptionsHeader: "Отображение",
     themeAuto: "Авто",
     themeLight: "Светлая",
@@ -269,7 +269,7 @@ async function updateSettingsText() {
   );
   if (wrapTaskTitlesCheckbox) {
     const label = wrapTaskTitlesCheckbox.parentElement;
-    const newText = translations[lang].wrapTaskTitlesHeader;
+    const newText = translations[lang].wrapWeekTitlesHeader;
     label.innerHTML = "";
     label.appendChild(document.createTextNode(newText));
     label.appendChild(wrapTaskTitlesCheckbox);
@@ -459,6 +459,7 @@ async function renderInbox() {
 
   inboxDiv.addEventListener("dragover", allowDrop);
   inboxDiv.addEventListener("drop", handleDrop);
+  inboxDiv.addEventListener("dragleave", handleDragLeave);
   const inboxTasks = await requestInboxTasks();
   const taskContainer = document.createElement("div");
   inboxDiv.appendChild(taskContainer);
@@ -625,6 +626,7 @@ async function renderWeekCalendar(date) {
     dayDiv.dataset.date = dayDateString;
     dayDiv.addEventListener("dragover", allowDrop);
     dayDiv.addEventListener("drop", handleDrop);
+    dayDiv.addEventListener("dragleave", handleDragLeave);
 
     const dayHeaderDiv = document.createElement("div");
     dayHeaderDiv.classList.add("day-header");
@@ -638,6 +640,7 @@ async function renderWeekCalendar(date) {
     dayDiv.appendChild(dayHeaderDiv);
 
     const taskContainer = document.createElement("div");
+    taskContainer.classList.add("task-container"); // Add class to task container
     dayDiv.appendChild(taskContainer);
 
     const dailyTasks = weekTasks.filter((task) => {
@@ -1199,11 +1202,104 @@ function handleDragStart(event) {
 function handleDragEnd(event) {
   event.target.classList.remove("dragging");
   draggedTask = null;
+
+  document
+    .querySelectorAll(
+      ".day > .task-container .drop-indicator, .inbox > div:not(.inbox-header):not(.new-task-form) .drop-indicator",
+    )
+    .forEach((indicator) => {
+      indicator.remove();
+    });
+
   updateTaskOrder(event.target.parentNode);
 }
 
 function allowDrop(event) {
   event.preventDefault();
+
+  let dropTarget = event.target;
+  let targetContainerElement = null;
+
+  // Directly target the task-container within day or inbox
+  if (dropTarget.classList.contains("day") || dropTarget.closest(".day")) {
+    const dayElement = dropTarget.classList.contains("day")
+      ? dropTarget
+      : dropTarget.closest(".day");
+    targetContainerElement = dayElement.querySelector(".task-container");
+    if (!targetContainerElement) {
+      console.warn("No task-container found in day:", dayElement);
+      return;
+    }
+  } else if (
+    dropTarget.classList.contains("inbox") ||
+    dropTarget.closest(".inbox")
+  ) {
+    targetContainerElement = inboxDiv.querySelector(
+      ":scope > div:not(.inbox-header):not(.new-task-form)",
+    );
+  } else if (
+    dropTarget.classList.contains("day-header") ||
+    dropTarget.classList.contains("day-number") ||
+    dropTarget.classList.contains("day-weekday")
+  ) {
+    dropTarget = dropTarget.closest(".day");
+    if (!dropTarget) return;
+    targetContainerElement = dropTarget.querySelector(".task-container");
+  } else if (
+    dropTarget.classList.contains("event") ||
+    dropTarget.closest(".event")
+  ) {
+    const eventElement = dropTarget.classList.contains("event")
+      ? dropTarget
+      : dropTarget.closest(".event");
+    const dayElement = eventElement.closest(".day");
+    if (dayElement) {
+      targetContainerElement = dayElement.querySelector(".task-container");
+    } else if (eventElement.closest(".inbox")) {
+      targetContainerElement = inboxDiv.querySelector(
+        ":scope > div:not(.inbox-header):not(.new-task-form)",
+      );
+    }
+  }
+
+  if (!targetContainerElement) return;
+
+  let indicator = targetContainerElement.querySelector(".drop-indicator");
+  if (!indicator) {
+    indicator = document.createElement("div");
+    indicator.className = "drop-indicator";
+    targetContainerElement.appendChild(indicator);
+  }
+
+  const rect = targetContainerElement.getBoundingClientRect();
+  const offsetY = event.clientY - rect.top;
+  const tasks = Array.from(targetContainerElement.children).filter((child) =>
+    child.classList.contains("event"),
+  );
+  let insertBeforeTask = null;
+  let indicatorPosition = 0;
+
+  if (tasks.length === 0) {
+    indicator.style.top = `0px`;
+    return;
+  }
+
+  let foundPosition = false;
+  for (const task of tasks) {
+    const taskRect = task.getBoundingClientRect();
+    if (offsetY < taskRect.top - rect.top + taskRect.height / 2) {
+      indicatorPosition = task.offsetTop;
+      foundPosition = true;
+      break;
+    }
+  }
+
+  if (!foundPosition) {
+    const lastTask = tasks[tasks.length - 1];
+    indicatorPosition = lastTask.offsetTop + lastTask.offsetHeight;
+  }
+
+  indicator.style.top = `${indicatorPosition}px`;
 }
 
 async function handleDrop(event) {
@@ -1220,12 +1316,20 @@ async function handleDrop(event) {
   let newDueDate = null;
   let targetContainerElement = null;
 
-  if (dropTarget.classList.contains("day")) {
-    newDueDate = dropTarget.dataset.date;
-    targetContainerElement = dropTarget.querySelector(
-      ":scope > div:not(.day-header):not(.new-task-form)",
-    );
-  } else if (dropTarget.classList.contains("inbox")) {
+  if (dropTarget.classList.contains("day") || dropTarget.closest(".day")) {
+    const dayElement = dropTarget.classList.contains("day")
+      ? dropTarget
+      : dropTarget.closest(".day");
+    newDueDate = dayElement.dataset.date;
+    targetContainerElement = dayElement.querySelector(".task-container");
+    if (!targetContainerElement) {
+      console.warn("No task-container found in day on drop:", dayElement);
+      return;
+    }
+  } else if (
+    dropTarget.classList.contains("inbox") ||
+    dropTarget.closest(".inbox")
+  ) {
     newDueDate = null;
     targetContainerElement = inboxDiv.querySelector(
       ":scope > div:not(.inbox-header):not(.new-task-form)",
@@ -1236,20 +1340,35 @@ async function handleDrop(event) {
     dropTarget.classList.contains("day-weekday")
   ) {
     dropTarget = dropTarget.closest(".day");
+    if (!dropTarget) return;
     newDueDate = dropTarget.dataset.date;
-    targetContainerElement = dropTarget.querySelector(
-      ":scope > div:not(.day-header):not(.new-task-form)",
-    );
-  } else if (dropTarget.closest(".day")) {
-    newDueDate = dropTarget.closest(".day").dataset.date;
-    targetContainerElement = dropTarget
-      .closest(".day")
-      .querySelector(":scope > div:not(.day-header):not(.new-task-form)");
-  } else if (dropTarget.closest(".inbox")) {
-    newDueDate = null;
-    targetContainerElement = inboxDiv.querySelector(
-      ":scope > div:not(.inbox-header):not(.new-task-form)",
-    );
+    targetContainerElement = dropTarget.querySelector(".task-container");
+  } else if (
+    dropTarget.classList.contains("event") ||
+    dropTarget.closest(".event")
+  ) {
+    const eventElement = dropTarget.classList.contains("event")
+      ? dropTarget
+      : dropTarget.closest(".event");
+    const dayElement = eventElement.closest(".day");
+    if (dayElement) {
+      newDueDate = dayElement.dataset.date;
+      targetContainerElement = dayElement.querySelector(".task-container");
+    } else if (eventElement.closest(".inbox")) {
+      newDueDate = null;
+      targetContainerElement = inboxDiv.querySelector(
+        ":scope > div:not(.inbox-header):not(.new-task-form)",
+      );
+    }
+  } else {
+    return;
+  }
+
+  if (targetContainerElement) {
+    const indicator = targetContainerElement.querySelector(".drop-indicator");
+    if (indicator) {
+      indicator.remove();
+    }
   }
 
   if (taskId && targetContainerElement) {
@@ -1505,9 +1624,7 @@ async function refreshTodayTasks() {
 async function renderAllTasks() {
   for (const dayId of dayIds) {
     const dayDiv = dayElements[dayId];
-    const taskContainer = dayDiv.querySelector(
-      ":scope > div:not(.day-header):not(.new-task-form)",
-    );
+    const taskContainer = dayDiv.querySelector(".task-container");
     if (taskContainer) {
       const taskElements = Array.from(taskContainer.children);
       taskContainer.innerHTML = "";
@@ -1884,24 +2001,46 @@ fuzzySearchInput.addEventListener("input", () => {
 });
 
 Object.values(dayElements).forEach((dayDiv) => {
-  dayDiv.addEventListener("click", async (event) => {
-    if (
-      popupOpen &&
-      !event.target.closest(".event") &&
-      !event.target.closest(".new-task-form") &&
-      !event.target.closest(".day-header")
-    ) {
-      const clickedDate = dayDiv.dataset.date;
-      const taskDateInput = document.getElementById("task-details-date");
-      if (taskDateInput) {
-        taskDateInput.value = clickedDate;
-        if (currentTaskBeingViewed) {
-          await updateTaskDueDate(clickedDate);
-        }
-      }
-    }
-  });
+  dayDiv.addEventListener("dragleave", handleDragLeave);
 });
+inboxDiv.addEventListener("dragleave", handleDragLeave);
+
+function handleDragLeave(event) {
+  let dropTarget = event.target; // Changed const to let
+
+  let targetContainerElement = null;
+
+  if (dropTarget.classList.contains("day")) {
+    targetContainerElement = dropTarget.querySelector(".task-container");
+  } else if (dropTarget.classList.contains("inbox")) {
+    targetContainerElement = inboxDiv.querySelector(
+      ":scope > div:not(.inbox-header):not(.new-task-form)",
+    );
+  } else if (
+    dropTarget.classList.contains("day-header") ||
+    dropTarget.classList.contains("day-number") ||
+    dropTarget.classList.contains("day-weekday")
+  ) {
+    dropTarget = dropTarget.closest(".day"); // Now reassignment is valid
+    if (!dropTarget) return;
+    targetContainerElement = dropTarget.querySelector(".task-container");
+  } else if (dropTarget.closest(".day")) {
+    targetContainerElement = dropTarget
+      .closest(".day")
+      .querySelector(".task-container");
+  } else if (dropTarget.closest(".inbox")) {
+    targetContainerElement = inboxDiv.querySelector(
+      ":scope > div:not(.inbox-header):not(.new-task-form)",
+    );
+  }
+
+  if (targetContainerElement) {
+    const indicator = targetContainerElement.querySelector(".drop-indicator");
+    if (indicator) {
+      indicator.remove();
+    }
+  }
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   initializeCalendar().then(() => {

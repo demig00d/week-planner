@@ -74,7 +74,6 @@ body.dark-theme {
   --task-border-color: #444;
 }
 
-/* Popup Borders */
 .task-details-popup,
 .settings-popup {
   border: 1px solid var(--task-border-color) !important;
@@ -1146,6 +1145,19 @@ body.dark-theme .task-details-popup-content .task-description-rendered code {
   padding-left: 1em;
   border-left: 0.25em solid var(--dim-text-color);
   color: var(--dim-text-color);
+}
+
+/* Drag and Drop Indicator */
+.drop-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--highlight-text-color);
+  z-index: 10;
+  pointer-events: none;
+  margin: 5px 0;
+  transform: translateY(-50%);
 }
 
 .description-mode-button {
