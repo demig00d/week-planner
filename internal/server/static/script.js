@@ -955,6 +955,8 @@ async function openTaskDetails(taskId) {
           } else {
             await renderWeekCalendar(displayedWeekStartDate);
           }
+        } else {
+          await renderWeekCalendar(displayedWeekStartDate);
         }
       }
       await renderInbox();
@@ -1244,7 +1246,7 @@ async function handleDrop(event) {
       .closest(".day")
       .querySelector(":scope > div:not(.day-header):not(.new-task-form)");
   } else if (dropTarget.closest(".inbox")) {
-    newDueDate = dropTarget.closest(".inbox").dataset.date;
+    newDueDate = null;
     targetContainerElement = inboxDiv.querySelector(
       ":scope > div:not(.inbox-header):not(.new-task-form)",
     );
