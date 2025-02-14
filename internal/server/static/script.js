@@ -1764,6 +1764,30 @@ async function updateTaskDueDate(newDate) {
     }
     updateTabTitle();
   }
+
+  if (newDate) {
+    const newDueDate = new Date(newDate);
+    const firstDayOfNewWeek = getWeekDates(newDueDate)[0];
+    const firstDayOfDisplayedWeek = getWeekDates(displayedWeekStartDate)[0];
+
+    if (
+      !(
+        firstDayOfNewWeek.getFullYear() ===
+          firstDayOfDisplayedWeek.getFullYear() &&
+        firstDayOfNewWeek.getMonth() === firstDayOfDisplayedWeek.getMonth() &&
+        firstDayOfNewWeek.getDate() === firstDayOfDisplayedWeek.getDate()
+      )
+    ) {
+      displayedWeekStartDate = firstDayOfNewWeek;
+      await renderWeekCalendar(displayedWeekStartDate);
+    } else {
+      await renderWeekCalendar(displayedWeekStartDate);
+    }
+  } else {
+    await renderWeekCalendar(displayedWeekStartDate);
+  }
+  await renderInbox();
+  highlightTask(currentTaskBeingViewed);
 }
 
 markDoneTaskDetailsBtn.addEventListener("click", async () => {
