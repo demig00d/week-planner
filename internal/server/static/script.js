@@ -183,7 +183,7 @@ const translations = {
     datePickerNavNext: "Следующий месяц",
     datePickerSetDate: "Назначить дату",
     fullWeekdaysHeader: "Полные названия дней недели",
-    wrapWeekTitlesHeader: "Переносить имя недель на следующую строку",
+    wrapWeekTitlesHeader: "Не сокращать заголовки задач",
     displayOptionsHeader: "Отображение",
     themeAuto: "Авто",
     themeLight: "Светлая",
@@ -763,31 +763,6 @@ async function createEventElement(
     const eventContent = document.createElement("div");
     eventContent.classList.add("event-content");
 
-    const leftActionButtons = document.createElement("div");
-    leftActionButtons.classList.add("action-buttons", "left");
-
-    const doneButton = document.createElement("button");
-    doneButton.classList.add("done-button");
-    doneButton.innerHTML = '<i class="far fa-check-circle"></i>';
-    doneButton.style.display = completed === 1 ? "none" : "inline-block";
-    doneButton.addEventListener("click", (event) => {
-      event.stopPropagation();
-      handleTaskCompletion(taskId, 1);
-    });
-    leftActionButtons.appendChild(doneButton);
-
-    const undoneButton = document.createElement("button");
-    undoneButton.classList.add("undone-button");
-    undoneButton.innerHTML = '<i class="fas fa-check-circle"></i>';
-    undoneButton.style.display = completed === 0 ? "none" : "inline-block";
-    undoneButton.addEventListener("click", (event) => {
-      event.stopPropagation();
-      handleTaskCompletion(taskId, 0);
-    });
-    leftActionButtons.appendChild(undoneButton);
-
-    eventContent.appendChild(leftActionButtons);
-
     const taskTextElement = document.createElement("span");
     taskTextElement.classList.add("task-text");
     taskTextElement.style.flexGrow = "1";
@@ -816,18 +791,29 @@ async function createEventElement(
     }
 
     const rightActionButtons = document.createElement("div");
-    rightActionButtons.classList.add("action-buttons", "right");
+    rightActionButtons.classList.add("action-buttons", "right"); // Moved to right
 
-    const deleteButton = document.createElement("button");
-    deleteButton.classList.add("delete-button");
-    deleteButton.innerHTML = '<i class="fas fa-times"></i>';
-    deleteButton.addEventListener("click", (event) => {
+    const doneButton = document.createElement("button");
+    doneButton.classList.add("done-button");
+    doneButton.innerHTML = '<i class="far fa-check-circle"></i>';
+    doneButton.style.display = completed === 1 ? "none" : "inline-block";
+    doneButton.addEventListener("click", (event) => {
       event.stopPropagation();
-      deleteTask(taskId);
+      handleTaskCompletion(taskId, 1);
     });
-    rightActionButtons.appendChild(deleteButton);
+    rightActionButtons.appendChild(doneButton); // Append to right action buttons
 
-    eventContent.appendChild(rightActionButtons);
+    const undoneButton = document.createElement("button");
+    undoneButton.classList.add("undone-button");
+    undoneButton.innerHTML = '<i class="fas fa-check-circle"></i>';
+    undoneButton.style.display = completed === 0 ? "none" : "inline-block";
+    undoneButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      handleTaskCompletion(taskId, 0);
+    });
+    rightActionButtons.appendChild(undoneButton); // Append to right action buttons
+
+    eventContent.appendChild(rightActionButtons); // Append right action buttons to event content
 
     eventDiv.appendChild(eventContent);
     resolve(eventDiv);
@@ -1220,7 +1206,6 @@ function allowDrop(event) {
   let dropTarget = event.target;
   let targetContainerElement = null;
 
-  // Directly target the task-container within day or inbox
   if (dropTarget.classList.contains("day") || dropTarget.closest(".day")) {
     const dayElement = dropTarget.classList.contains("day")
       ? dropTarget
@@ -2201,33 +2186,46 @@ function setupSSE() {
 
 const faviconColors = {
   light: {
-    empty: "lightgreen",
-    singleDigit: "lightblue",
-    multiple: "lightgrey",
-    textColor: "#000000",
+    empty: "#2E7D32",
+    singleDigit: "#1565C0",
+    multiple: "#424242",
   },
   dark: {
-    empty: "#4CAF50",
+    empty: "#A5D6A7",
     singleDigit: "#64B5F6",
-    multiple: "#9E9E9E",
-    textColor: "#000000",
+    multiple: "#BDBDBD",
   },
 };
 
 const faviconEmptyTasks = `<svg width="80" height="80" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="40" cy="40" r="40" fill="{fillColor}"/>
-    <text x="40" y="39" font-family="Arial" font-size="80" fill="{textColor}" text-anchor="middle" dominant-baseline="central">✓</text>
-    </svg>`;
+  <defs>
+    <mask id="text-hole">
+      <rect width="100%" height="100%" fill="white"/>
+      <text x="40" y="39" font-family="Arial" font-size="80" font-weight="bold" fill="" text-anchor="middle" dominant-baseline="central">✓</text>
+    </mask>
+  </defs>
+  <circle cx="40" cy="40" r="40" fill="{fillColor}" mask="url(#text-hole)"/>
+</svg>`;
 
 const faviconSingleDigitTasks = `<svg width="80" height="80" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="40" cy="40" r="40" fill="{fillColor}"/>
-    <text x="40" y="39" font-family="Arial" font-size="80" fill="{textColor}" text-anchor="middle" dominant-baseline="central">{count}</text>
-    </svg>`;
+  <defs>
+    <mask id="text-hole">
+      <rect width="100%" height="100%" fill="white"/>
+      <text x="40" y="39" font-family="Arial" font-size="80" font-weight="bold" fill="" text-anchor="middle" dominant-baseline="central">{count}</text>
+    </mask>
+  </defs>
+  <circle cx="40" cy="40" r="40" fill="{fillColor}" mask="url(#text-hole)"/>
+</svg>`;
 
 const faviconMultipleTasks = `<svg width="80" height="80" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="40" cy="40" r="40" fill="{fillColor}"/>
-    <text x="40" y="39" font-family="Arial" font-size="80" fill="{textColor}" text-anchor="middle" dominant-baseline="central">∞</text>
-    </svg>`;
+  <defs>
+    <mask id="text-hole">
+      <rect width="100%" height="100%" fill="white"/>
+      <text x="40" y="39" font-family="Arial" font-size="80" font-weight="bold" fill="" text-anchor="middle" dominant-baseline="central">∞</text>
+    </mask>
+  </defs>
+  <circle cx="40" cy="40" r="40" fill="{fillColor}" mask="url(#text-hole)"/>
+</svg>`;
 
 function svgToDataUrl(svgString) {
   const encodedSVG = encodeURIComponent(svgString);

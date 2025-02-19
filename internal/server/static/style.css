@@ -314,6 +314,7 @@ body.dark-theme .event[data-task-color="orange"] {
   align-items: center;
   gap: 8px;
   width: 100%;
+  justify-content: space-between; /* Modified: Align items to start and end */
 }
 
 .task-text {
@@ -353,10 +354,12 @@ body.dark-theme .event[data-task-color="orange"] {
 .action-buttons {
   display: flex;
   gap: 4px;
+  opacity: 0; /* Initially hidden */
+  transition: opacity 0.2s ease-in-out; /* Transition for opacity */
 }
 
-.action-buttons.right {
-  margin-left: auto;
+.event:hover .action-buttons {
+  opacity: 1; /* Show on event hover */
 }
 
 .action-buttons.left {
@@ -364,8 +367,7 @@ body.dark-theme .event[data-task-color="orange"] {
 }
 
 .done-button,
-.undone-button,
-.delete-button {
+.undone-button {
   background: none;
   border: none;
   font-size: 1em;
@@ -376,13 +378,14 @@ body.dark-theme .event[data-task-color="orange"] {
   transition: opacity 0.2s ease-in-out;
 }
 
-.delete-button {
+/* Removed delete button related hover styles */
+/* .delete-button {
   opacity: 0;
 }
 
 .event:hover .delete-button {
   opacity: 1;
-}
+} */
 
 .done-button i {
   color: grey;
@@ -392,9 +395,10 @@ body.dark-theme .event[data-task-color="orange"] {
   color: grey;
 }
 
-.delete-button i {
+/* Removed delete button icon color style */
+/* .delete-button i {
   color: var(--task-popup-icons-color);
-}
+} */
 
 .new-task-form {
   margin-top: 5px;
@@ -765,7 +769,7 @@ body.dark-theme .event[data-task-color="orange"] {
   opacity: 1;
 }
 
-/* Visible Delete Button in Popup */
+/* Visible Delete Button in Popup - Keep styles for popup delete button */
 .task-details-popup .delete-button {
   background-color: transparent;
   color: var(--task-popup-icons-color);
@@ -1147,7 +1151,6 @@ body.dark-theme .task-details-popup-content .task-description-rendered code {
   color: var(--dim-text-color);
 }
 
-/* Drag and Drop Indicator */
 .drop-indicator {
   position: absolute;
   left: 0;
@@ -1156,7 +1159,7 @@ body.dark-theme .task-details-popup-content .task-description-rendered code {
   background-color: var(--highlight-text-color);
   z-index: 10;
   pointer-events: none;
-  margin: 5px 0;
+  margin: -5px 0;
   transform: translateY(-50%);
 }
 
