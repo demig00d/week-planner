@@ -779,20 +779,8 @@ async function createEventElement(
     }
     eventContent.appendChild(taskTextElement);
 
-    if (has_description) {
-      const descriptionIcon = document.createElement("i");
-      descriptionIcon.classList.add(
-        "fas",
-        "fa-sticky-note",
-        "description-icon",
-      );
-      descriptionIcon.title = "This task has a description";
-      eventContent.appendChild(descriptionIcon);
-    }
-
     const rightActionButtons = document.createElement("div");
-    rightActionButtons.classList.add("action-buttons", "right"); // Moved to right
-
+    rightActionButtons.classList.add("action-buttons", "right");
     const doneButton = document.createElement("button");
     doneButton.classList.add("done-button");
     doneButton.innerHTML = '<i class="far fa-check-circle"></i>';
@@ -811,7 +799,21 @@ async function createEventElement(
       event.stopPropagation();
       handleTaskCompletion(taskId, 0);
     });
+    rightActionButtons.appendChild(doneButton);
+    rightActionButtons.appendChild(undoneButton);
+
     rightActionButtons.appendChild(undoneButton); // Append to right action buttons
+
+    if (has_description) {
+      const descriptionIcon = document.createElement("i");
+      descriptionIcon.classList.add(
+        "fas",
+        "fa-sticky-note",
+        "description-icon",
+      );
+      descriptionIcon.title = "This task has a description";
+      eventContent.appendChild(descriptionIcon); // <-- append directly to eventContent
+    }
 
     eventContent.appendChild(rightActionButtons); // Append right action buttons to event content
 

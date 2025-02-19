@@ -309,17 +309,10 @@ body.dark-theme .event[data-task-color="orange"] {
   box-shadow: var(--drag-shadow);
 }
 
-.event-content {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  justify-content: space-between; /* Modified: Align items to start and end */
-}
-
 .task-text {
   flex-grow: 1;
   overflow-wrap: break-word;
+  margin-right: 30px; /* Add margin to prevent overlap */
 }
 
 .task-text.completed {
@@ -339,33 +332,55 @@ body.dark-theme .event[data-task-color="orange"] {
   text-overflow: clip;
 }
 
+.event-content {
+  position: relative; /* Create positioning context */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: space-between;
+}
+
+/* Description Icon */
 .description-icon {
   font-size: 0.9em;
   opacity: 0.8;
-  transition: opacity 0.2s ease-in-out;
   color: var(--dim-text-color);
-  margin-left: 8px;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1; /* Lower z-index than buttons */
+  pointer-events: none;
+  transition: opacity 0.2s ease-in-out;
 }
 
-.description-icon:hover {
-  opacity: 1;
-}
-
+/* Action Buttons */
 .action-buttons {
   display: flex;
   gap: 4px;
-  opacity: 0; /* Initially hidden */
-  transition: opacity 0.2s ease-in-out; /* Transition for opacity */
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
-.event:hover .action-buttons {
-  opacity: 1; /* Show on event hover */
+.action-buttons.right {
+  z-index: 2;
 }
 
-.action-buttons.left {
-  margin-right: auto;
+/* Hover States */
+.event-content:hover .description-icon {
+  opacity: 0;
 }
 
+.event-content:hover .action-buttons {
+  opacity: 1;
+}
+
+/* Button Styles */
 .done-button,
 .undone-button {
   background: none;
@@ -378,27 +393,10 @@ body.dark-theme .event[data-task-color="orange"] {
   transition: opacity 0.2s ease-in-out;
 }
 
-/* Removed delete button related hover styles */
-/* .delete-button {
-  opacity: 0;
-}
-
-.event:hover .delete-button {
-  opacity: 1;
-} */
-
-.done-button i {
-  color: grey;
-}
-
+.done-button i,
 .undone-button i {
   color: grey;
 }
-
-/* Removed delete button icon color style */
-/* .delete-button i {
-  color: var(--task-popup-icons-color);
-} */
 
 .new-task-form {
   margin-top: 5px;
@@ -887,7 +885,6 @@ body.dark-theme .event[data-task-color="orange"] {
   border: none;
   background: inherit;
 }
-
 .color-swatch.selected-color::after {
   border: 2px solid var(--input-focus-border);
 }
