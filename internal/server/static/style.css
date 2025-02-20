@@ -503,6 +503,7 @@ body.dark-theme .event[data-task-color="orange"] {
   -ms-user-select: none;
   user-select: none;
   min-height: 20px;
+  font-size: 0.9em;
 }
 
 .display-checkbox label.styled-checkbox input[type="checkbox"] {
@@ -518,9 +519,10 @@ body.dark-theme .event[data-task-color="orange"] {
 .display-checkbox label.styled-checkbox::before {
   content: "";
   display: inline-block;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   border: 2px solid var(--day-border);
+  border-radius: 50%;
   background-color: transparent;
   transition:
     background-color 0.2s ease,
@@ -530,6 +532,7 @@ body.dark-theme .event[data-task-color="orange"] {
   top: 50%;
   transform: translateY(-50%);
   box-sizing: border-box;
+  border-width: 1.5px;
 }
 
 .display-checkbox label.styled-checkbox.checked::before {
@@ -543,10 +546,10 @@ body.dark-theme .event[data-task-color="orange"] {
   content: "\f00c";
   position: absolute;
   top: 50%;
-  left: 4px;
+  left: 3px;
   transform: translateY(-50%);
   color: var(--bg-color);
-  font-size: 12px;
+  font-size: 10px;
   z-index: 1;
 }
 
