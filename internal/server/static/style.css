@@ -43,6 +43,7 @@ body {
   --drag-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   --highlight-text-color: #007bff;
   --dim-text-color: #888;
+  --dim-task-text-color: #888;
   --dim-highlight-text-color: #709ff7;
   --task-color-blue-light: #e0f7fa;
   --task-color-green-light: #e8f5e9;
@@ -65,6 +66,7 @@ body.dark-theme {
   --drag-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
   --highlight-text-color: #66a3ff;
   --dim-text-color: #aaa;
+  --dim-task-text-color: #999;
   --dim-highlight-text-color: #425b8b;
   --task-color-blue-dark: #000b1f;
   --task-color-green-dark: #001f1f;
@@ -316,7 +318,7 @@ body.dark-theme .event[data-task-color="orange"] {
 
 .task-text.completed {
   text-decoration: line-through;
-  color: var(--dim-text-color);
+  color: var(--dim-task-text-color);
 }
 
 .task-text.no-wrap {
