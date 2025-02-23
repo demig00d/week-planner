@@ -209,7 +209,7 @@ body.dark-theme .inbox {
   position: sticky;
   top: 0;
   background-color: var(--bg-color);
-  z-index: 1;
+  z-index: 2;
 }
 
 .day-header.today-highlight {
@@ -334,12 +334,13 @@ body.dark-theme .event[data-task-color="orange"] {
 }
 
 .event-content {
-  position: relative; /* Create positioning context */
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
   justify-content: space-between;
+  z-index: 1;
 }
 
 /* Description Icon */
@@ -351,7 +352,7 @@ body.dark-theme .event[data-task-color="orange"] {
   right: 0;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 1; /* Lower z-index than buttons */
+  z-index: 0;
   pointer-events: none;
   transition: opacity 0.2s ease-in-out;
 }
@@ -366,7 +367,7 @@ body.dark-theme .event[data-task-color="orange"] {
   right: 0;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 2;
+  z-index: 0;
 }
 
 /* Hover States */
@@ -780,6 +781,7 @@ body.dark-theme .event[data-task-color="orange"] {
   white-space: nowrap;
   margin-bottom: 5px;
   margin-right: 0;
+  margin-top: 5px; /* ADDED: Move delete button down */
 }
 
 .task-details-popup .delete-button:hover {
