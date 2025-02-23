@@ -302,24 +302,6 @@
       </div>
     </div>
 
-    <script src="script.js"></script>
-    <script>
-      document
-        .getElementById("task-details-popup-overlay")
-        .addEventListener("transitionend", () => {
-          if (
-            document.getElementById("task-details-popup-overlay").style
-              .display === "flex"
-          ) {
-            document
-              .getElementById("task-details-popup-overlay")
-              .dispatchEvent(new CustomEvent("show.popup"));
-          } else {
-            document
-              .getElementById("task-details-popup-overlay")
-              .dispatchEvent(new CustomEvent("hide.popup"));
-          }
-        });
-    </script>
+    <script type="module" src="js/app.js"></script>
   </body>
 </html>
