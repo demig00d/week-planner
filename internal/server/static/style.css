@@ -610,7 +610,7 @@ body.dark-theme .event[data-task-color="orange"] {
   align-items: flex-start;
   z-index: 1000;
   display: none;
-  padding-top: 200px;
+  padding-top: 170px;
   overflow-y: auto;
 }
 
@@ -623,6 +623,9 @@ body.dark-theme .event[data-task-color="orange"] {
   max-width: 500px;
   position: relative;
   border: 1px solid var(--task-border-color);
+  display: flex;
+  flex-direction: column;
+  max-height: 65vh;
   margin-bottom: 20px;
 }
 
@@ -632,6 +635,7 @@ body.dark-theme .event[data-task-color="orange"] {
   border-bottom: none;
   padding-bottom: 0;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .task-popup-top-bar {
@@ -639,6 +643,7 @@ body.dark-theme .event[data-task-color="orange"] {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
+  flex-shrink: 0;
 }
 
 .task-actions-group-left,
@@ -698,6 +703,9 @@ body.dark-theme .event[data-task-color="orange"] {
   display: flex;
   flex-direction: column;
   margin-top: 15px;
+  flex-grow: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .task-details-popup-content label {
@@ -765,7 +773,7 @@ body.dark-theme .event[data-task-color="orange"] {
   opacity: 1;
 }
 
-/* Visible Delete Button in Popup - Keep styles for popup delete button */
+/* Visible Delete Button in Popup */
 .task-details-popup .delete-button {
   background-color: transparent;
   color: var(--task-popup-icons-color);
@@ -781,7 +789,7 @@ body.dark-theme .event[data-task-color="orange"] {
   white-space: nowrap;
   margin-bottom: 5px;
   margin-right: 0;
-  margin-top: 5px; /* ADDED: Move delete button down */
+  margin-top: 5px;
 }
 
 .task-details-popup .delete-button:hover {
