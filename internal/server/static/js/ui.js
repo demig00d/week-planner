@@ -259,15 +259,21 @@ export async function openTaskDetails(taskId) {
 
     const descriptionText = task.description || "";
     taskDescriptionTextarea.value = descriptionText;
-    adjustTextareaHeight();
     taskDescriptionRendered.innerHTML = marked.parse(descriptionText);
-    taskDescriptionRendered.style.height = descriptionHeight;
 
-    isDescriptionRenderedMode = false;
-    taskDescriptionRendered.style.display = "none";
-    taskDescriptionTextarea.style.display = "block";
-    toggleDescriptionModeBtn.classList.remove("rendered-mode");
-    descriptionModeIcon.style.color = "";
+    if (descriptionText.trim() !== "") {
+      isDescriptionRenderedMode = true;
+      taskDescriptionRendered.style.display = "block";
+      taskDescriptionTextarea.style.display = "none";
+      toggleDescriptionModeBtn.classList.add("rendered-mode");
+      descriptionModeIcon.className = "fas fa-pen";
+    } else {
+      isDescriptionRenderedMode = false;
+      taskDescriptionRendered.style.display = "none";
+      taskDescriptionTextarea.style.display = "block";
+      toggleDescriptionModeBtn.classList.remove("rendered-mode");
+      descriptionModeIcon.className = "fas fa-book-open";
+    }
 
     const colorSwatches = document.querySelectorAll(".color-swatch");
     colorSwatches.forEach((swatch) => {
@@ -297,6 +303,8 @@ export async function openTaskDetails(taskId) {
         });
       };
     });
+
+    // Call adjustTextareaHeight *after* setting content and display properties
     adjustTextareaHeight();
     updateMarkAsDoneButton(isCompleted);
   } catch (error) {
@@ -310,15 +318,68 @@ export function closeTaskDetailsPopup() {
   datePickerVisible = false;
   currentTaskBeingViewed = null;
 }
-
+// IMPORTANT: Modified adjustTextareaHeight
 function adjustTextareaHeight() {
-  taskDescriptionTextarea.style.height = "auto";
-  let scrollHeight = taskDescriptionTextarea.scrollHeight;
-  let newHeight = Math.max(parseInt(minDescriptionHeight), scrollHeight);
+  const popup = taskDetailsPopup;
+  const topBarHeight = popup.querySelector(".task-popup-top-bar").offsetHeight;
+  const titleHeight = popup.querySelector(".task-details-title").offsetHeight;
+  const labelHeight = popup.querySelector(
+    ".task-details-popup-content label",
+  ).offsetHeight;
+  const contentPaddingVertical = 40;
+  const popupPaddingVertical = 40;
+  const marginBottom = 20;
 
-  taskDescriptionTextarea.style.height = `${newHeight}px`;
-  descriptionHeight = `${newHeight}px`;
-  taskDescriptionRendered.style.height = descriptionHeight;
+  const totalFixedElementsHeight =
+    topBarHeight +
+    titleHeight +
+    labelHeight +
+    contentPaddingVertical +
+    popupPaddingVertical +
+    marginBottom;
+
+  // Get max-height of the popup from CSS, in pixels (assuming vh is relative to viewport height now)
+  const maxHeightVH = 65; // as defined in your CSS (65vh)
+  const viewportHeight = window.innerHeight;
+  let maxHeightPixels = (maxHeightVH / 100) * viewportHeight;
+
+  let availableHeight = maxHeightPixels - totalFixedElementsHeight;
+
+  console.log("--- adjustTextareaHeight ---");
+  console.log("Popup Max Height (pixels):", maxHeightPixels);
+  console.log("Total Fixed Elements Height:", totalFixedElementsHeight);
+  console.log("Available Height for Description:", availableHeight);
+
+  if (availableHeight < 0) {
+    availableHeight = 0; // Ensure availableHeight is not negative
+  }
+
+  if (isDescriptionRenderedMode) {
+    taskDescriptionRendered.style.height = "auto";
+    let renderedScrollHeight = taskDescriptionRendered.scrollHeight;
+    let newRenderedHeight = Math.max(
+      parseInt(minDescriptionHeight),
+      renderedScrollHeight,
+    );
+
+    newRenderedHeight = Math.min(newRenderedHeight, availableHeight);
+    taskDescriptionRendered.style.height = `${newRenderedHeight}px`;
+    descriptionHeight = `${newRenderedHeight}px`;
+    console.log("Rendered Description Height:", newRenderedHeight);
+  } else {
+    taskDescriptionTextarea.style.height = "auto";
+    let scrollHeight = taskDescriptionTextarea.scrollHeight;
+    let newTextareaHeight = Math.max(
+      parseInt(minDescriptionHeight),
+      scrollHeight,
+    );
+
+    newTextareaHeight = Math.min(newTextareaHeight, availableHeight);
+    taskDescriptionTextarea.style.height = `${newTextareaHeight}px`;
+    descriptionHeight = `${newTextareaHeight}px`;
+    console.log("Textarea Description Height:", newTextareaHeight);
+  }
+  console.log("--- end adjustTextareaHeight ---");
 }
 
 export function updateMarkAsDoneButton(isCompleted) {
@@ -377,9 +438,9 @@ taskDescriptionTextarea.addEventListener("blur", async (event) => {
       const descriptionText = event.target.value || "";
       const renderedDescription = marked.parse(descriptionText);
       taskDescriptionRendered.innerHTML = renderedDescription;
-      adjustTextareaHeight();
+      adjustTextareaHeight(); //adjust height after parsing
     } else {
-      adjustTextareaHeight();
+      adjustTextareaHeight(); // Adjust if in edit mode
     }
   }
 });
@@ -416,17 +477,18 @@ toggleDescriptionModeBtn.addEventListener("click", () => {
     taskDescriptionRendered.style.display = "block";
     taskDescriptionTextarea.style.display = "none";
     toggleDescriptionModeBtn.classList.add("rendered-mode");
-    descriptionModeIcon.style.color = "";
+    descriptionModeIcon.className = "fas fa-pen";
     taskDescriptionRendered.style.height = descriptionHeight;
   } else {
     taskDescriptionRendered.style.display = "none";
     taskDescriptionTextarea.style.display = "block";
     toggleDescriptionModeBtn.classList.remove("rendered-mode");
-    descriptionModeIcon.style.color = "";
+    descriptionModeIcon.className = "fas fa-book-open";
     taskDescriptionTextarea.style.height = descriptionHeight;
     taskDescriptionTextarea.focus();
-    adjustTextareaHeight();
   }
+  //Adjust after toggling
+  adjustTextareaHeight();
 });
 
 export function handleTaskCompletionUI(taskElement, completed) {

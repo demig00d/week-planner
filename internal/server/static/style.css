@@ -51,6 +51,7 @@ body {
   --task-color-pink-light: #fce4ec;
   --task-color-orange-light: #ffe0b2;
   --task-border-color: #ccc;
+  --link-color-light: #007bff; /* Default link color for light theme */
 }
 
 body.dark-theme {
@@ -74,6 +75,7 @@ body.dark-theme {
   --task-color-pink-dark: #2a1f2a;
   --task-color-orange-dark: #1f1f0a;
   --task-border-color: #444;
+  --link-color-dark: #66a3ff; /* Link color for dark theme */
 }
 
 .task-details-popup,
@@ -129,7 +131,7 @@ body.dark-theme {
   background: none;
   border: none;
   color: var(--text-color);
-  font-size: 1.2em;
+  font-size: 1em;
   cursor: pointer;
   margin-left: 10px;
   padding: 8px 12px;
@@ -627,6 +629,7 @@ body.dark-theme .event[data-task-color="orange"] {
   flex-direction: column;
   max-height: 65vh;
   margin-bottom: 20px;
+  overflow: hidden;
 }
 
 .task-details-popup h2 {
@@ -699,7 +702,7 @@ body.dark-theme .event[data-task-color="orange"] {
 }
 
 .task-details-popup-content {
-  margin-bottom: 15px;
+  margin-bottom: 5px;
   display: flex;
   flex-direction: column;
   margin-top: 15px;
@@ -712,9 +715,8 @@ body.dark-theme .event[data-task-color="orange"] {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 5px;
+  margin-bottom: 10px;
   font-weight: bold;
-  gap: 10px;
 }
 
 .task-details-popup input[type="color"],
@@ -722,7 +724,7 @@ body.dark-theme .event[data-task-color="orange"] {
 .task-details-popup-content .task-description-rendered {
   width: 100%;
   padding: 8px;
-  margin-bottom: 10px;
+  /* margin-bottom: 5px; /* Reduced margin-bottom to 5px */
   border: 1px solid var(--task-border-color) !important;
   background-color: transparent;
   color: var(--text-color);
@@ -1084,9 +1086,7 @@ body.dark-theme .date-picker-day.selected {
 /* Markdown Rendering Styles */
 .task-details-popup-content .task-description-rendered {
   padding: 8px;
-  margin-bottom: 10px;
   border: 1px solid var(--task-border-color) !important;
-  border-radius: 4px;
   background-color: transparent;
   color: var(--text-color);
   box-sizing: border-box;
@@ -1131,7 +1131,6 @@ body.dark-theme .date-picker-day.selected {
   font-family: monospace, monospace;
   padding: 0.2em 0.4em;
   background-color: var(--inbox-bg-light);
-  /* border-radius: 3px; */
 }
 
 body.dark-theme .task-details-popup-content .task-description-rendered code {
@@ -1149,6 +1148,20 @@ body.dark-theme .task-details-popup-content .task-description-rendered code {
   padding-left: 1em;
   border-left: 0.25em solid var(--dim-text-color);
   color: var(--dim-text-color);
+}
+
+/* Link Styles within Markdown Rendered Description */
+.task-details-popup-content .task-description-rendered a {
+  color: var(--link-color-light);
+  text-decoration: none;
+}
+
+body.dark-theme .task-details-popup-content .task-description-rendered a {
+  color: var(--link-color-dark);
+}
+
+.task-details-popup-content .task-description-rendered a:hover {
+  text-decoration: underline;
 }
 
 .drop-indicator {
