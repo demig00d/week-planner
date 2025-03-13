@@ -356,7 +356,8 @@ body.dark-theme .event[data-task-color="orange"] {
 }
 
 /* Description Icon */
-.description-icon {
+.description-icon,
+.task-progress {
   font-size: 0.9em;
   opacity: 0.8;
   color: var(--dim-text-color);
@@ -382,7 +383,8 @@ body.dark-theme .event[data-task-color="orange"] {
 }
 
 /* Hover States */
-.event:hover .description-icon {
+.event:hover .description-icon,
+.event:hover .task-progress {
   opacity: 0;
 }
 

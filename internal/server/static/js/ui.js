@@ -430,25 +430,52 @@ taskDescriptionTextarea.addEventListener("blur", async (event) => {
       description: newDescription,
     });
 
+    tasks.reRenderTaskElement(currentTaskBeingViewed);
+
     const taskElement = document.querySelector(
       `.event[data-task-id="${currentTaskBeingViewed}"]`,
     );
     if (taskElement) {
       let descriptionIcon = taskElement.querySelector(".description-icon");
+      let taskProgress = taskElement.querySelector(".task-progress");
+
       if (newDescription.trim() !== "") {
-        if (!descriptionIcon) {
-          descriptionIcon = document.createElement("i");
-          descriptionIcon.classList.add(
-            "fas",
-            "fa-sticky-note",
-            "description-icon",
-          );
-          descriptionIcon.title = "This task has a description";
-          taskElement.querySelector(".task-text").after(descriptionIcon);
+        const checkboxRegex = /^- \[([x ])\]/gm;
+        const matches = newDescription.match(checkboxRegex);
+        if (matches && matches.length <= 9) {
+          if (!taskProgress) {
+            taskProgress = document.createElement("span");
+            taskProgress.classList.add("task-progress");
+            taskElement.querySelector(".task-text").after(taskProgress);
+          }
+          if (descriptionIcon) {
+            descriptionIcon.remove();
+          }
+          const totalCheckboxes = matches.length;
+          const checkedCheckboxes =
+            newDescription.match(/^- \[x\]/gm)?.length || 0;
+          taskProgress.textContent = `${checkedCheckboxes}/${totalCheckboxes}`;
+        } else {
+          if (!descriptionIcon) {
+            descriptionIcon = document.createElement("i");
+            descriptionIcon.classList.add(
+              "fas",
+              "fa-sticky-note",
+              "description-icon",
+            );
+            descriptionIcon.title = "This task has a description";
+            taskElement.querySelector(".task-text").after(descriptionIcon);
+          }
+          if (taskProgress) {
+            taskProgress.remove();
+          }
         }
       } else {
         if (descriptionIcon) {
           descriptionIcon.remove();
+        }
+        if (taskProgress) {
+          taskProgress.remove();
         }
       }
     }

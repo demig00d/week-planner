@@ -52,6 +52,32 @@ export async function createTaskElement(task) {
     }
     eventContent.appendChild(taskTextElement);
 
+    if (task.description) {
+      const checkboxRegex = /^- \[([x ])\]/gm;
+      const matches = task.description.match(checkboxRegex);
+      if (matches && matches.length <= 9) {
+        const totalCheckboxes = matches.length;
+        const checkedCheckboxes =
+          task.description.match(/^- \[x\]/gm)?.length || 0;
+        const progressText = `${checkedCheckboxes}/${totalCheckboxes}`;
+
+        const progressElement = document.createElement("span");
+        progressElement.classList.add("task-progress");
+        progressElement.textContent = progressText;
+        eventContent.appendChild(progressElement);
+      } else if (task.description) {
+        // Fallback to description icon if no checkboxes or more than 9
+        const descriptionIcon = document.createElement("i");
+        descriptionIcon.classList.add(
+          "fas",
+          "fa-sticky-note",
+          "description-icon",
+        );
+        descriptionIcon.title = "This task has a description";
+        eventContent.appendChild(descriptionIcon);
+      }
+    }
+
     const rightActionButtons = document.createElement("div");
     rightActionButtons.classList.add("action-buttons", "right");
 
@@ -84,20 +110,43 @@ export async function createTaskElement(task) {
     rightActionButtons.appendChild(doneButton);
     rightActionButtons.appendChild(undoneButton);
 
-    if (task.description) {
-      const descriptionIcon = document.createElement("i");
-      descriptionIcon.classList.add(
-        "fas",
-        "fa-sticky-note",
-        "description-icon",
-      );
-      descriptionIcon.title = "This task has a description";
-      eventContent.appendChild(descriptionIcon);
-    }
     eventContent.appendChild(rightActionButtons);
     eventDiv.appendChild(eventContent);
     resolve(eventDiv);
   });
+}
+
+// Re-render a single task element
+export async function reRenderTaskElement(taskId) {
+  const taskDetails = await api.fetchTaskDetails(taskId);
+  if (!taskDetails) {
+    console.error("Task details not found for id:", taskId);
+    return;
+  }
+
+  const oldTaskElement = document.querySelector(
+    `.event[data-task-id="${taskId}"]`,
+  );
+  if (!oldTaskElement) {
+    console.error("Old task element not found for id:", taskId);
+    return;
+  }
+
+  const parentContainer = oldTaskElement.parentNode;
+  if (!parentContainer) {
+    console.error("Parent container not found for task id:", taskId);
+    return;
+  }
+
+  const newTaskElement = await createTaskElement(taskDetails);
+  if (!newTaskElement) {
+    console.error("Failed to create new task element for id:", taskId);
+    return;
+  }
+
+  attachTaskEventListeners(newTaskElement, taskId);
+
+  parentContainer.replaceChild(newTaskElement, oldTaskElement);
 }
 
 // Attach event listeners to a task element
@@ -365,17 +414,15 @@ export async function handleTaskCompletion(
   try {
     await api.updateTask(taskId, { completed: completed });
 
-    // Use the callback to update todayTasks
-    const taskToUpdateIndex = todayTasks.findIndex(
-      (task) => task.id === parseInt(taskId),
-    );
-    if (taskToUpdateIndex !== -1) {
-      const updatedTasks = [...todayTasks]; // Create a copy
-      updatedTasks[taskToUpdateIndex] = {
-        ...updatedTasks[taskToUpdateIndex],
-        completed,
-      }; // Update the specific task
-      updateTodayTasks(updatedTasks); // CORRECT: Use the callback
+    // Update todayTasks array if the task is in it
+    if (todayTasks && updateTodayTasks) {
+      const updatedTodayTasks = todayTasks.map((task) => {
+        if (task.id === taskId) {
+          return { ...task, completed: completed };
+        }
+        return task;
+      });
+      updateTodayTasks(updatedTodayTasks);
     }
 
     const taskElement = document.querySelector(
@@ -420,19 +467,19 @@ export async function renderAllTasks() {
   for (const dayId of dayIds) {
     const dayDiv = dayElements[dayId];
     const taskContainer = dayDiv.querySelector(".task-container");
-    if (taskContainer) {
-      const taskElements = Array.from(taskContainer.children);
-      taskContainer.innerHTML = "";
-      for (const taskElement of taskElements) {
-        const taskId = taskElement.dataset.taskId;
-        if (taskId) {
-          const taskDetails = await api.fetchTaskDetails(taskId);
-          if (taskDetails) {
-            const newEvent = await createTaskElement(taskDetails);
-            if (newEvent) {
-              attachTaskEventListeners(newEvent, taskDetails.id);
-              taskContainer.appendChild(newEvent);
-            }
+    if (!taskContainer) continue;
+
+    const taskElements = Array.from(taskContainer.children);
+    taskContainer.innerHTML = "";
+    for (const taskElement of taskElements) {
+      const taskId = taskElement.dataset.taskId;
+      if (taskId) {
+        const taskDetails = await api.fetchTaskDetails(taskId);
+        if (taskDetails) {
+          const newEvent = await createTaskElement(taskDetails);
+          if (newEvent) {
+            attachTaskEventListeners(newEvent, taskDetails.id);
+            taskContainer.appendChild(newEvent);
           }
         }
       }
