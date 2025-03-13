@@ -16,19 +16,30 @@ const searchBtn = document.getElementById("search-btn");
 const fuzzySearchInput = document.getElementById("fuzzy-search-input");
 
 // State variables
-let displayedWeekStartDate = utils.getStartOfWeek(new Date());
+let _displayedWeekStartDate = utils.getStartOfWeek(new Date()); // Use an underscore to indicate it's "private" to app.js
 let currentTheme = localStorage.getItem("theme") || "auto";
 let displayFullWeekdays = localStorage.getItem("fullWeekdays") === "true";
 let wrapTaskTitles = localStorage.getItem("wrapTaskTitles") !== "false";
 if (localStorage.getItem("wrapTaskTitles") === null) {
-  wrapTaskTitles = initialWrapTaskTitles; // Use the default if not set
+  wrapTaskTitles = initialWrapTaskTitles;
 }
+
+// Getter for displayedWeekStartDate (optional, but good practice)
+export const getDisplayedWeekStartDate = () => _displayedWeekStartDate;
+
+// Setter function for displayedWeekStartDate - This is what we export
+export const setDisplayedWeekStartDate = (newDate) => {
+  _displayedWeekStartDate = newDate;
+};
+
+// Now use the getter internally in app.js where you need the value
+const getDisplayedWeekStartDateInternal = () => _displayedWeekStartDate;
 
 // Initialization function
 async function initialize() {
   loadLanguage();
   ui.setTheme(currentTheme);
-  calendar.renderWeekCalendar(displayedWeekStartDate);
+  calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
   calendar.renderInbox();
   ui.updateSettingsText();
   setupEventListeners();
@@ -46,13 +57,17 @@ async function initialize() {
 //Corrected setupEventListeners
 function setupEventListeners() {
   prevWeekButton.addEventListener("click", () => {
-    displayedWeekStartDate = utils.addDays(displayedWeekStartDate, -7);
-    calendar.renderWeekCalendar(displayedWeekStartDate);
+    setDisplayedWeekStartDate(
+      utils.addDays(getDisplayedWeekStartDateInternal(), -7),
+    ); // Use setter here
+    calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
   });
 
   nextWeekButton.addEventListener("click", () => {
-    displayedWeekStartDate = utils.addDays(displayedWeekStartDate, 7);
-    calendar.renderWeekCalendar(displayedWeekStartDate);
+    setDisplayedWeekStartDate(
+      utils.addDays(getDisplayedWeekStartDateInternal(), 7),
+    ); // Use setter here
+    calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
   });
 
   settingsBtn.addEventListener("click", ui.toggleSettingsPopup);
@@ -103,12 +118,20 @@ function setupEventListeners() {
         document
           .getElementById("task-details-popup-overlay")
           .dispatchEvent(new CustomEvent("show.popup"));
+        //Removed from transitionend.
       } else {
         document
           .getElementById("task-details-popup-overlay")
           .dispatchEvent(new CustomEvent("hide.popup"));
       }
     });
+
+  document
+    .getElementById("task-details-popup-overlay")
+    .addEventListener("show.popup", () => {
+      ui.adjustTextareaHeight(); //Call on show.popup event
+    });
+
   // Task completion in task details popup, correct todayTasks update
   document
     .getElementById("mark-done-task-details")
@@ -138,8 +161,8 @@ function setupEventListeners() {
 }
 
 function handleMonthNameClick() {
-  displayedWeekStartDate = utils.getStartOfWeek(new Date());
-  calendar.renderWeekCalendar(displayedWeekStartDate);
+  setDisplayedWeekStartDate(utils.getStartOfWeek(new Date()));
+  calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
 }
 
 function handleGlobalKeydown(event) {
@@ -160,7 +183,7 @@ function handleFullWeekdaysChange(event) {
   ui.handleCheckboxChange(event.target);
   displayFullWeekdays = event.target.checked;
   localStorage.setItem("fullWeekdays", displayFullWeekdays);
-  calendar.renderWeekCalendar(displayedWeekStartDate);
+  calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
 }
 
 async function handleWrapTaskTitlesChange(event) {

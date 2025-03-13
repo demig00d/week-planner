@@ -8,6 +8,7 @@ import {
   updateTranslations,
 } from "./localization.js";
 import { TASK_COLORS } from "./config.js";
+import { setDisplayedWeekStartDate } from "./app.js";
 
 const settingsPopup = document.getElementById("settings-popup");
 const taskDetailsPopupOverlay = document.getElementById(
@@ -48,7 +49,7 @@ let isSearchOpen = false;
 let searchTimeout = null;
 let datePickerVisible = false;
 let datePickerCurrentDate = new Date();
-export let todayTasks = []; // Changed from const to let
+export let todayTasks = [];
 
 export function toggleSettingsPopup() {
   isSettingsOpen = !isSettingsOpen;
@@ -164,7 +165,6 @@ export function getTaskBackgroundColor(color) {
   const currentTheme = localStorage.getItem("theme") || "auto";
   if (!color) return "transparent";
 
-  // Correctly determine the theme based on user preference
   const theme =
     currentTheme === "auto"
       ? window.matchMedia &&
@@ -218,7 +218,6 @@ export async function openTaskDetails(taskId) {
       const newTitle = titleInput.value.trim();
       if (newTitle !== task.title) {
         await api.updateTask(taskId, { title: newTitle });
-        //Correct todayTasks update
         const todayTaskIndex = todayTasks.findIndex((t) => t.id === taskId);
         if (todayTaskIndex !== -1) {
           todayTasks[todayTaskIndex].title = newTitle;
@@ -235,7 +234,6 @@ export async function openTaskDetails(taskId) {
 
     titleInput.addEventListener("blur", handleTitleBlur);
 
-    // Get lang here
     const lang = localStorage.getItem("language") || "ru";
 
     if (task.due_date) {
@@ -304,8 +302,6 @@ export async function openTaskDetails(taskId) {
       };
     });
 
-    // Call adjustTextareaHeight *after* setting content and display properties
-    adjustTextareaHeight();
     updateMarkAsDoneButton(isCompleted);
   } catch (error) {
     console.error("Error fetching task details:", error);
@@ -318,17 +314,28 @@ export function closeTaskDetailsPopup() {
   datePickerVisible = false;
   currentTaskBeingViewed = null;
 }
-// IMPORTANT: Modified adjustTextareaHeight
-function adjustTextareaHeight() {
+
+export function adjustTextareaHeight() {
+  if (taskDetailsPopupOverlay.style.display !== "flex") return;
   const popup = taskDetailsPopup;
-  const topBarHeight = popup.querySelector(".task-popup-top-bar").offsetHeight;
-  const titleHeight = popup.querySelector(".task-details-title").offsetHeight;
+  if (!popup) return;
+
+  const topBarHeight = popup.querySelector(".task-popup-top-bar")?.offsetHeight;
+  const titleHeight = popup.querySelector(".task-details-title")?.offsetHeight;
   const labelHeight = popup.querySelector(
     ".task-details-popup-content label",
-  ).offsetHeight;
+  )?.offsetHeight;
   const contentPaddingVertical = 40;
   const popupPaddingVertical = 40;
   const marginBottom = 20;
+
+  if (
+    topBarHeight === undefined ||
+    titleHeight === undefined ||
+    labelHeight === undefined
+  ) {
+    return;
+  }
 
   const totalFixedElementsHeight =
     topBarHeight +
@@ -338,20 +345,14 @@ function adjustTextareaHeight() {
     popupPaddingVertical +
     marginBottom;
 
-  // Get max-height of the popup from CSS, in pixels (assuming vh is relative to viewport height now)
-  const maxHeightVH = 65; // as defined in your CSS (65vh)
+  const maxHeightVH = 65;
   const viewportHeight = window.innerHeight;
   let maxHeightPixels = (maxHeightVH / 100) * viewportHeight;
 
   let availableHeight = maxHeightPixels - totalFixedElementsHeight;
 
-  console.log("--- adjustTextareaHeight ---");
-  console.log("Popup Max Height (pixels):", maxHeightPixels);
-  console.log("Total Fixed Elements Height:", totalFixedElementsHeight);
-  console.log("Available Height for Description:", availableHeight);
-
   if (availableHeight < 0) {
-    availableHeight = 0; // Ensure availableHeight is not negative
+    availableHeight = 0;
   }
 
   if (isDescriptionRenderedMode) {
@@ -365,7 +366,6 @@ function adjustTextareaHeight() {
     newRenderedHeight = Math.min(newRenderedHeight, availableHeight);
     taskDescriptionRendered.style.height = `${newRenderedHeight}px`;
     descriptionHeight = `${newRenderedHeight}px`;
-    console.log("Rendered Description Height:", newRenderedHeight);
   } else {
     taskDescriptionTextarea.style.height = "auto";
     let scrollHeight = taskDescriptionTextarea.scrollHeight;
@@ -377,9 +377,7 @@ function adjustTextareaHeight() {
     newTextareaHeight = Math.min(newTextareaHeight, availableHeight);
     taskDescriptionTextarea.style.height = `${newTextareaHeight}px`;
     descriptionHeight = `${newTextareaHeight}px`;
-    console.log("Textarea Description Height:", newTextareaHeight);
   }
-  console.log("--- end adjustTextareaHeight ---");
 }
 
 export function updateMarkAsDoneButton(isCompleted) {
@@ -409,7 +407,6 @@ taskDescriptionTextarea.addEventListener("blur", async (event) => {
       description: newDescription,
     });
 
-    // Find the task element and update the description icon
     const taskElement = document.querySelector(
       `.event[data-task-id="${currentTaskBeingViewed}"]`,
     );
@@ -424,7 +421,6 @@ taskDescriptionTextarea.addEventListener("blur", async (event) => {
             "description-icon",
           );
           descriptionIcon.title = "This task has a description";
-          // Insert after .task-text
           taskElement.querySelector(".task-text").after(descriptionIcon);
         }
       } else {
@@ -438,9 +434,9 @@ taskDescriptionTextarea.addEventListener("blur", async (event) => {
       const descriptionText = event.target.value || "";
       const renderedDescription = marked.parse(descriptionText);
       taskDescriptionRendered.innerHTML = renderedDescription;
-      adjustTextareaHeight(); //adjust height after parsing
+      adjustTextareaHeight();
     } else {
-      adjustTextareaHeight(); // Adjust if in edit mode
+      adjustTextareaHeight();
     }
   }
 });
@@ -451,7 +447,6 @@ deleteTaskDetailsBtn.addEventListener("click", async () => {
   if (currentTaskBeingViewed) {
     const deleted = await api.deleteTask(currentTaskBeingViewed);
     if (deleted) {
-      //Correct todayTasks update
       todayTasks = todayTasks.filter(
         (task) => task.id !== currentTaskBeingViewed,
       );
@@ -487,7 +482,6 @@ toggleDescriptionModeBtn.addEventListener("click", () => {
     taskDescriptionTextarea.style.height = descriptionHeight;
     taskDescriptionTextarea.focus();
   }
-  //Adjust after toggling
   adjustTextareaHeight();
 });
 
@@ -547,7 +541,7 @@ async function displayFuzzySearchResults(query) {
             localStorage.getItem("language") || "ru",
             { day: "numeric", month: "short" },
           )
-        : "📦 Inbox"; // Use a constant or i18n key
+        : "📦 Inbox";
       listItem.innerHTML = `
                 <div class="fuzzy-search-task-title">${task.title}</div>
                 <div class="fuzzy-search-task-date">${taskDate}</div>
@@ -559,10 +553,12 @@ async function displayFuzzySearchResults(query) {
         document.getElementById("fuzzy-search-input").value = "";
 
         if (task.due_date) {
-          let displayedWeekStartDate = utils.getStartOfWeek(
-            new Date(task.due_date),
+          setDisplayedWeekStartDate(
+            utils.getStartOfWeek(new Date(task.due_date)),
           );
-          calendar.renderWeekCalendar(displayedWeekStartDate);
+          calendar.renderWeekCalendar(
+            utils.getStartOfWeek(new Date(task.due_date)),
+          );
           highlightTask(task.id);
         } else {
           document
@@ -655,46 +651,45 @@ async function handleDateSelection(dateString) {
   );
   datePickerContainer.style.display = "none";
   datePickerVisible = false;
-  await updateTaskDueDate(dateString); // Calls the API
+  await updateTaskDueDate(dateString);
 }
 
 async function updateTaskDueDate(newDate) {
   if (!currentTaskBeingViewed) return;
-  if (currentTaskBeingViewed) {
-    const taskElement = document.querySelector(
-      `.event[data-task-id="${currentTaskBeingViewed}"]`,
+  const taskElement = document.querySelector(
+    `.event[data-task-id="${currentTaskBeingViewed}"]`,
+  );
+  const wasTodayTask =
+    taskElement &&
+    taskElement.dataset.dueDate === new Date().toLocaleDateString("en-CA");
+  const isTodayTask = newDate === new Date().toLocaleDateString("en-CA");
+
+  await api.updateTask(currentTaskBeingViewed, { due_date: newDate });
+
+  if (wasTodayTask && !isTodayTask) {
+    todayTasks = todayTasks.filter(
+      (task) => task.id !== currentTaskBeingViewed,
     );
-    const wasTodayTask =
-      taskElement &&
-      taskElement.dataset.dueDate === new Date().toLocaleDateString("en-CA");
-    const isTodayTask = newDate === new Date().toLocaleDateString("en-CA");
-
-    await api.updateTask(currentTaskBeingViewed, { due_date: newDate });
-
-    //Correct todayTasks update
-    if (wasTodayTask && !isTodayTask) {
-      todayTasks = todayTasks.filter(
-        (task) => task.id !== currentTaskBeingViewed,
-      );
-    } else if (!wasTodayTask && isTodayTask) {
-      const taskDetails = await api.fetchTaskDetails(currentTaskBeingViewed);
-      if (taskDetails) {
-        todayTasks.push(taskDetails);
-      }
+  } else if (!wasTodayTask && isTodayTask) {
+    const taskDetails = await api.fetchTaskDetails(currentTaskBeingViewed);
+    if (taskDetails) {
+      todayTasks.push(taskDetails);
     }
-    updateTabTitle();
   }
+  updateTabTitle();
 
   if (newDate) {
     const newDueDate = new Date(newDate);
-    let displayedWeekStartDate = utils.getStartOfWeek(newDueDate);
-    calendar.renderWeekCalendar(displayedWeekStartDate);
+    setDisplayedWeekStartDate(utils.getStartOfWeek(newDueDate));
+    calendar.renderWeekCalendar(utils.getStartOfWeek(newDueDate));
   } else {
-    let displayedWeekStartDate = utils.getStartOfWeek(new Date());
-    calendar.renderWeekCalendar(displayedWeekStartDate);
+    setDisplayedWeekStartDate(utils.getStartOfWeek(new Date()));
+    calendar.renderWeekCalendar(utils.getStartOfWeek(new Date()));
   }
-  tasks.renderAllTasks();
-  highlightTask(currentTaskBeingViewed);
+  await tasks.renderAllTasks();
+  requestAnimationFrame(() => {
+    highlightTask(currentTaskBeingViewed);
+  });
 }
 
 markDoneTaskDetailsBtn.addEventListener("click", async () => {
@@ -753,7 +748,7 @@ document
       translations[localStorage.getItem("language") || "ru"].datePickerSetDate;
     datePickerContainer.style.display = "none";
     datePickerVisible = false;
-    await updateTaskDueDate(null); // Update to null date
+    await updateTaskDueDate(null);
   });
 
 export function handleCheckboxChange(checkbox) {
@@ -773,7 +768,7 @@ export function setLanguage(lang) {
 
 export async function updateTabTitle() {
   const lang = localStorage.getItem("language") || "ru";
-  await refreshTodayTasks(); // Await the refresh
+  await refreshTodayTasks();
   const incompleteTodayTasks = todayTasks.filter(
     (task) => task.completed === 0,
   );
