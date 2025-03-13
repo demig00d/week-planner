@@ -286,10 +286,41 @@ export async function openTaskDetails(taskId) {
 
     const colorSwatches = document.querySelectorAll(".color-swatch");
     colorSwatches.forEach((swatch) => {
+      swatch.classList.remove("selected-color"); // Clear all selections first
+    });
+
+    // Select the correct color swatch based on task.color
+    const initialColor = task.color || "no-color"; // Default to 'no-color' if task.color is empty
+    const swatchToSelect = document.querySelector(
+      `.color-swatch[data-color="${initialColor}"]`,
+    );
+    if (swatchToSelect) {
+      swatchToSelect.classList.add("selected-color");
+    }
+
+    colorSwatches.forEach((swatch) => {
       swatch.onclick = async (event) => {
-        let color = event.target.dataset.color;
-        if (color === "no-color") {
+        let color = swatch.dataset.color;
+        if (color === "no-color" || color === undefined) {
           color = "";
+        }
+
+        // Check if the color is actually being changed before making API call
+        const currentTaskDetails = await api.fetchTaskDetails(
+          currentTaskBeingViewed,
+        );
+        if (currentTaskDetails && currentTaskDetails.color === color) {
+          // If the color is not changing, just update UI and exit to prevent "No fields to update" error
+          colorSwatches.forEach((sw) => sw.classList.remove("selected-color")); // Clear all
+          swatch.classList.add("selected-color"); // Select current
+          const taskElement = document.querySelector(
+            `.event[data-task-id="${currentTaskBeingViewed}"]`,
+          );
+          if (taskElement) {
+            taskElement.dataset.taskColor = color;
+            taskElement.style.backgroundColor = getTaskBackgroundColor(color);
+          }
+          return; // Exit without making API call
         }
 
         if (currentTaskBeingViewed) {
@@ -304,7 +335,7 @@ export async function openTaskDetails(taskId) {
         }
 
         colorSwatches.forEach((sw) => {
-          if (sw === event.target) {
+          if (sw === swatch) {
             sw.classList.add("selected-color");
           } else {
             sw.classList.remove("selected-color");

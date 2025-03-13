@@ -1,4 +1,3 @@
-/* Scrollbar Styling */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -15,7 +14,6 @@
   background-color: #999;
 }
 
-/* Global Styles */
 body {
   font-family: sans-serif;
   margin: 0;
@@ -51,7 +49,7 @@ body {
   --task-color-pink-light: #fce4ec;
   --task-color-orange-light: #ffe0b2;
   --task-border-color: #ccc;
-  --link-color-light: #007bff; /* Default link color for light theme */
+  --link-color-light: #007bff;
 }
 
 body.dark-theme {
@@ -75,27 +73,39 @@ body.dark-theme {
   --task-color-pink-dark: #2a1f2a;
   --task-color-orange-dark: #1f1f0a;
   --task-border-color: #444;
-  --link-color-dark: #66a3ff; /* Link color for dark theme */
+  --link-color-dark: #66a3ff;
 }
 
 .task-details-popup,
-.settings-popup {
+.settings-popup,
+.fuzzy-search-popup,
+.date-picker-container {
   border: 1px solid var(--task-border-color) !important;
+  background-color: var(--bg-color);
+  color: var(--text-color);
 }
 
 .task-details-popup h2,
-.settings-popup h3 {
+.settings-popup h3,
+.date-picker-header {
   border-bottom: 1px solid var(--task-border-color) !important;
 }
 
 .task-details-popup textarea,
 .task-details-popup input[type="color"],
 .color-swatches .color-swatch,
-.task-details-popup-content .task-description-rendered {
+.task-details-popup-content .task-description-rendered,
+.fuzzy-search-popup input,
+.settings-option select {
   border: 1px solid var(--task-border-color) !important;
+  background-color: transparent;
+  color: var(--text-color);
 }
 
-/* Calendar Container */
+.color-swatch[data-color="no-color"] i {
+  color: var(--task-popup-icons-color);
+}
+
 .calendar-container {
   display: flex;
   flex-direction: column;
@@ -315,7 +325,7 @@ body.dark-theme .event[data-task-color="orange"] {
 .task-text {
   flex-grow: 1;
   overflow-wrap: break-word;
-  margin-right: 30px; /* Add margin to prevent overlap */
+  margin-right: 30px;
 }
 
 .task-text.completed {
@@ -359,7 +369,6 @@ body.dark-theme .event[data-task-color="orange"] {
   transition: opacity 0.2s ease-in-out;
 }
 
-/* Action Buttons */
 .action-buttons {
   display: flex;
   gap: 4px;
@@ -381,7 +390,6 @@ body.dark-theme .event[data-task-color="orange"] {
   opacity: 1;
 }
 
-/* Button Styles */
 .done-button,
 .undone-button {
   background: none;
@@ -435,20 +443,16 @@ body.dark-theme .event[data-task-color="orange"] {
   position: absolute;
   top: 60px;
   right: 20px;
-  background-color: var(--bg-color);
-  color: var(--text-color);
-  border: 1px solid var(--task-border-color);
-  padding: 20px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   z-index: 10;
   display: none;
   width: 500px;
+  padding: 20px;
 }
 
 .settings-popup h3 {
   margin-top: 0;
   margin-bottom: 15px;
-  border-bottom: 1px solid var(--task-border-color);
   padding-bottom: 10px;
 }
 
@@ -474,10 +478,7 @@ body.dark-theme .event[data-task-color="orange"] {
 .settings-option select {
   width: 100%;
   padding: 8px;
-  border: 1px solid var(--task-border-color);
   box-sizing: border-box;
-  background-color: transparent;
-  color: var(--text-color);
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -600,7 +601,6 @@ body.dark-theme .event[data-task-color="orange"] {
   }
 }
 
-/* Task Details Popup */
 .task-details-popup-overlay {
   position: fixed;
   top: 0;
@@ -618,19 +618,16 @@ body.dark-theme .event[data-task-color="orange"] {
 }
 
 .task-details-popup {
-  background-color: var(--bg-color);
-  color: var(--text-color);
-  padding: 20px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   width: 80%;
   max-width: 500px;
   position: relative;
-  border: 1px solid var(--task-border-color);
   display: flex;
   flex-direction: column;
   max-height: 65vh;
   margin-bottom: 20px;
   overflow: hidden;
+  padding: 20px;
 }
 
 .task-details-popup h2 {
@@ -676,20 +673,18 @@ body.dark-theme .event[data-task-color="orange"] {
 
 .task-details-date {
   padding: 6px 8px;
-  border: 1px solid var(--task-border-color);
-  background-color: transparent;
-  color: var(--text-color);
   cursor: pointer;
   position: relative;
   margin-right: 8px;
   white-space: nowrap;
   font-size: 0.9em;
   margin-bottom: 5px;
+  border: 1px solid var(--task-border-color);
 }
 
 .task-details-date:focus {
   outline: none;
-  border: 1px solid var(--input-focus-border);
+  border: 1px solid var(--task-border-color);
 }
 
 .task-details-date-icon {
@@ -720,15 +715,10 @@ body.dark-theme .event[data-task-color="orange"] {
   font-weight: bold;
 }
 
-.task-details-popup input[type="color"],
 .task-details-popup textarea,
 .task-details-popup-content .task-description-rendered {
   width: 100%;
   padding: 8px;
-  /* margin-bottom: 5px; /* Reduced margin-bottom to 5px */
-  border: 1px solid var(--task-border-color) !important;
-  background-color: transparent;
-  color: var(--text-color);
   box-sizing: border-box;
 }
 
@@ -776,7 +766,6 @@ body.dark-theme .event[data-task-color="orange"] {
   opacity: 1;
 }
 
-/* Visible Delete Button in Popup */
 .task-details-popup .delete-button {
   background-color: transparent;
   color: var(--task-popup-icons-color);
@@ -814,7 +803,6 @@ body.dark-theme .event[data-task-color="orange"] {
   flex-wrap: wrap;
 }
 
-/* Color Swatch Size Reduction */
 .color-swatch {
   border: 1px solid var(--task-border-color);
   width: 24px;
@@ -833,9 +821,41 @@ body.dark-theme .event[data-task-color="orange"] {
 
 .color-swatch i {
   font-size: 0.8em;
+  position: relative;
 }
 
-/* Other Specific Styles */
+.color-swatch.selected-color[data-color="no-color"] i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.color-swatch.selected-color::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border-radius: 24px;
+  border: 1px solid var(--input-focus-border);
+  outline: 1px solid var(--highlight-text-color);
+  box-shadow: 0 0 0 2px var(--bg-color);
+  pointer-events: none;
+}
+
+.color-swatch.selected-color:focus::after,
+.color-swatch.selected-color:hover::after {
+  border: 1px solid var(--input-focus-border);
+  outline: 1px solid var(--highlight-text-color);
+  box-shadow: 0 0 0 2px var(--bg-color);
+}
+
+.color-swatch:focus {
+  outline: none;
+}
+
 .inbox-title-input {
   width: auto;
   max-width: calc(100% - 18px);
@@ -864,12 +884,6 @@ body.dark-theme .event[data-task-color="orange"] {
   font-weight: bold;
 }
 
-.task-title-input:focus {
-  border: none;
-  width: 100%;
-  box-sizing: border-box;
-}
-
 .task-details-popup textarea:focus {
   border: 1px solid var(--input-focus-border);
   outline: none;
@@ -880,26 +894,6 @@ body.dark-theme .event[data-task-color="orange"] {
   align-items: center;
   gap: 8px;
   margin-bottom: 10px;
-}
-
-.color-swatch::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-  border: none;
-  background: inherit;
-}
-
-.color-swatch.selected-color::after {
-  border: 2px solid var(--input-focus-border);
-}
-
-.color-swatch:focus {
-  outline: none;
 }
 
 .search-button {
@@ -924,24 +918,18 @@ body.dark-theme .event[data-task-color="orange"] {
   top: 60px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: var(--bg-color);
-  color: var(--text-color);
-  border: 1px solid var(--task-border-color);
-  padding: 10px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   z-index: 10;
   display: none;
   width: 300px;
+  padding: 10px;
 }
 
 .fuzzy-search-popup input {
   width: calc(100% - 10px);
   padding: 8px 10px;
-  border: 1px solid var(--task-border-color);
   margin: 0 auto 10px;
   display: block;
-  background-color: transparent;
-  color: var(--text-color);
   box-sizing: border-box;
 }
 
@@ -1002,9 +990,6 @@ body.dark-theme .fuzzy-search-popup li:hover {
   bottom: 0;
   right: 0;
   z-index: 1100;
-  background-color: var(--bg-color);
-  color: var(--text-color);
-  border: 1px solid var(--task-border-color);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   display: none;
 }
@@ -1014,7 +999,6 @@ body.dark-theme .fuzzy-search-popup li:hover {
   justify-content: space-between;
   align-items: center;
   padding: 8px;
-  border-bottom: 1px solid var(--task-border-color);
 }
 
 .date-picker-month-year {
@@ -1087,9 +1071,6 @@ body.dark-theme .date-picker-day.selected {
 /* Markdown Rendering Styles */
 .task-details-popup-content .task-description-rendered {
   padding: 8px;
-  border: 1px solid var(--task-border-color) !important;
-  background-color: transparent;
-  color: var(--text-color);
   box-sizing: border-box;
   min-height: 100px;
   overflow-wrap: break-word;
