@@ -42,13 +42,13 @@ const fuzzySearchResultsList = document.getElementById("fuzzy-search-results");
 
 let currentTaskBeingViewed = null;
 let isDescriptionRenderedMode = false;
-let descriptionHeight = "100px";
 let minDescriptionHeight = "50px";
 let isSettingsOpen = false;
 let isSearchOpen = false;
 let searchTimeout = null;
 let datePickerVisible = false;
 let datePickerCurrentDate = new Date();
+
 export let todayTasks = [];
 
 export function toggleSettingsPopup() {
@@ -203,18 +203,17 @@ export async function openTaskDetails(taskId) {
       console.error("Task not found!");
       return;
     }
-
     const isCompleted = task.completed === 1;
-    taskDetailsTitle.innerHTML = "";
 
+    // Set title input
+    taskDetailsTitle.innerHTML = "";
     const titleInput = document.createElement("input");
     titleInput.type = "text";
     titleInput.value = task.title;
     titleInput.classList.add("task-title-input");
     taskDetailsTitle.appendChild(titleInput);
     titleInput.focus();
-
-    const handleTitleBlur = async () => {
+    titleInput.addEventListener("blur", async () => {
       const newTitle = titleInput.value.trim();
       if (newTitle !== task.title) {
         await api.updateTask(taskId, { title: newTitle });
@@ -230,12 +229,10 @@ export async function openTaskDetails(taskId) {
           taskTextElement.textContent = newTitle;
         }
       }
-    };
+    });
 
-    titleInput.addEventListener("blur", handleTitleBlur);
-
+    // Set date picker
     const lang = localStorage.getItem("language") || "ru";
-
     if (task.due_date) {
       datePickerCurrentDate = new Date(task.due_date);
       taskDetailsDateInput.dataset.selectedDate = task.due_date;
@@ -251,27 +248,41 @@ export async function openTaskDetails(taskId) {
       taskDetailsDateInput.dataset.selectedDate = "";
       taskDetailsDateInput.textContent = translations[lang].datePickerSetDate;
     }
-
     renderDatePicker();
+
+    // Show task details popup
     taskDetailsPopupOverlay.style.display = "flex";
 
+    // Set description content
     const descriptionText = task.description || "";
     taskDescriptionTextarea.value = descriptionText;
     taskDescriptionRendered.innerHTML = marked.parse(descriptionText);
 
+    // Reset display modes and icons
+    taskDescriptionRendered.style.display = "none";
+    taskDescriptionTextarea.style.display = "none";
+    isDescriptionRenderedMode = false;
+
+    // Set initial mode based on content
     if (descriptionText.trim() !== "") {
+      // Open in rendered mode if description exists
       isDescriptionRenderedMode = true;
       taskDescriptionRendered.style.display = "block";
-      taskDescriptionTextarea.style.display = "none";
-      toggleDescriptionModeBtn.classList.add("rendered-mode");
-      descriptionModeIcon.className = "fas fa-pen";
     } else {
-      isDescriptionRenderedMode = false;
-      taskDescriptionRendered.style.display = "none";
       taskDescriptionTextarea.style.display = "block";
-      toggleDescriptionModeBtn.classList.remove("rendered-mode");
-      descriptionModeIcon.className = "fas fa-book-open";
     }
+
+    // Adjust height dynamically
+    requestAnimationFrame(() => {
+      if (isDescriptionRenderedMode) {
+        toggleDescriptionModeBtn.classList.add("rendered-mode");
+        descriptionModeIcon.className = "fas fa-pen";
+      } else {
+        toggleDescriptionModeBtn.classList.remove("rendered-mode");
+        descriptionModeIcon.className = "fas fa-book-open";
+      }
+      adjustTextareaHeight();
+    });
 
     const colorSwatches = document.querySelectorAll(".color-swatch");
     colorSwatches.forEach((swatch) => {
@@ -317,26 +328,19 @@ export function closeTaskDetailsPopup() {
 
 export function adjustTextareaHeight() {
   if (taskDetailsPopupOverlay.style.display !== "flex") return;
+
   const popup = taskDetailsPopup;
   if (!popup) return;
 
-  const topBarHeight = popup.querySelector(".task-popup-top-bar")?.offsetHeight;
-  const titleHeight = popup.querySelector(".task-details-title")?.offsetHeight;
-  const labelHeight = popup.querySelector(
-    ".task-details-popup-content label",
-  )?.offsetHeight;
+  const topBarHeight =
+    popup.querySelector(".task-popup-top-bar")?.offsetHeight || 0;
+  const titleHeight =
+    popup.querySelector(".task-details-title")?.offsetHeight || 0;
+  const labelHeight =
+    popup.querySelector(".task-details-popup-content label")?.offsetHeight || 0;
   const contentPaddingVertical = 40;
   const popupPaddingVertical = 40;
   const marginBottom = 20;
-
-  if (
-    topBarHeight === undefined ||
-    titleHeight === undefined ||
-    labelHeight === undefined
-  ) {
-    return;
-  }
-
   const totalFixedElementsHeight =
     topBarHeight +
     titleHeight +
@@ -344,39 +348,30 @@ export function adjustTextareaHeight() {
     contentPaddingVertical +
     popupPaddingVertical +
     marginBottom;
-
   const maxHeightVH = 65;
   const viewportHeight = window.innerHeight;
-  let maxHeightPixels = (maxHeightVH / 100) * viewportHeight;
-
-  let availableHeight = maxHeightPixels - totalFixedElementsHeight;
-
-  if (availableHeight < 0) {
-    availableHeight = 0;
-  }
+  const maxHeightPixels = (maxHeightVH / 100) * viewportHeight;
+  const availableHeight = Math.max(
+    maxHeightPixels - totalFixedElementsHeight,
+    0,
+  );
 
   if (isDescriptionRenderedMode) {
-    taskDescriptionRendered.style.height = "auto";
-    let renderedScrollHeight = taskDescriptionRendered.scrollHeight;
-    let newRenderedHeight = Math.max(
-      parseInt(minDescriptionHeight),
-      renderedScrollHeight,
+    taskDescriptionRendered.style.height = "auto"; // Reset to auto to measure content
+    const renderedScrollHeight = taskDescriptionRendered.scrollHeight;
+    const newHeight = Math.min(
+      Math.max(renderedScrollHeight, parseInt(minDescriptionHeight)),
+      availableHeight,
     );
-
-    newRenderedHeight = Math.min(newRenderedHeight, availableHeight);
-    taskDescriptionRendered.style.height = `${newRenderedHeight}px`;
-    descriptionHeight = `${newRenderedHeight}px`;
+    taskDescriptionRendered.style.height = `${newHeight}px`;
   } else {
-    taskDescriptionTextarea.style.height = "auto";
-    let scrollHeight = taskDescriptionTextarea.scrollHeight;
-    let newTextareaHeight = Math.max(
-      parseInt(minDescriptionHeight),
-      scrollHeight,
+    taskDescriptionTextarea.style.height = "auto"; // Reset to auto to measure content
+    const textareaScrollHeight = taskDescriptionTextarea.scrollHeight;
+    const newHeight = Math.min(
+      Math.max(textareaScrollHeight, parseInt(minDescriptionHeight)),
+      availableHeight,
     );
-
-    newTextareaHeight = Math.min(newTextareaHeight, availableHeight);
-    taskDescriptionTextarea.style.height = `${newTextareaHeight}px`;
-    descriptionHeight = `${newTextareaHeight}px`;
+    taskDescriptionTextarea.style.height = `${newHeight}px`;
   }
 }
 
@@ -467,21 +462,19 @@ toggleDescriptionModeBtn.addEventListener("click", () => {
 
   if (isDescriptionRenderedMode) {
     const descriptionText = taskDescriptionTextarea.value || "";
-    const renderedDescription = marked.parse(descriptionText);
-    taskDescriptionRendered.innerHTML = renderedDescription;
+    taskDescriptionRendered.innerHTML = marked.parse(descriptionText);
     taskDescriptionRendered.style.display = "block";
     taskDescriptionTextarea.style.display = "none";
     toggleDescriptionModeBtn.classList.add("rendered-mode");
     descriptionModeIcon.className = "fas fa-pen";
-    taskDescriptionRendered.style.height = descriptionHeight;
   } else {
     taskDescriptionRendered.style.display = "none";
     taskDescriptionTextarea.style.display = "block";
     toggleDescriptionModeBtn.classList.remove("rendered-mode");
     descriptionModeIcon.className = "fas fa-book-open";
-    taskDescriptionTextarea.style.height = descriptionHeight;
     taskDescriptionTextarea.focus();
   }
+
   adjustTextareaHeight();
 });
 
