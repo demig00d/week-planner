@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
-	"sync"
 	"time"
 
 	"week-planner/internal/config"
@@ -51,29 +50,8 @@ func main() {
 	}()
 
 	shutdownChan := make(chan bool)
-	dateChangeChan := make(chan bool)
-	var lastCheckDay string
-	var mu sync.Mutex
 
-	go func() {
-		ticker := time.NewTicker(1 * time.Minute)
-		defer ticker.Stop()
-
-		for range ticker.C {
-			now := time.Now()
-			today := now.Format(config.DateFormat)
-
-			mu.Lock()
-			if today != lastCheckDay {
-				slog.Info("Date changed, sending date-change event")
-				lastCheckDay = today
-				dateChangeChan <- true
-			}
-			mu.Unlock()
-		}
-	}()
-
-	router := server.SetupRouter(dateChangeChan)
+	router := server.SetupRouter()
 
 	serverAddr := fmt.Sprintf("http://%s:%d/", cfg.Host, cfg.Port)
 	slog.Info(fmt.Sprintf("Server running on %s:%d", cfg.Host, cfg.Port))

@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -250,51 +249,4 @@ func SearchTasksHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(tasksToJSON(tasks))
-}
-
-// DateChangeEventsHandler returns an HTTP handler for server-sent events (SSE),
-// which sends notifications to clients when the date changes.
-// When a client connects, the necessary headers for SSE are set, and the dateChangeChan channel is monitored.
-func DateChangeEventsHandler(dateChangeChan chan bool) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		// Set headers for SSE
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Connection", "keep-alive")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-
-		// Check if ResponseWriter supports the Flusher interface for streaming
-		flusher, ok := w.(http.Flusher)
-		if !ok {
-			http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
-			return
-		}
-
-		// Create a channel for the client to receive events
-		clientChan := make(chan string)
-		go func() {
-			for msg := range clientChan {
-				// Send message to the client
-				fmt.Fprintf(w, "data: %s\n\n", msg)
-				flusher.Flush() // Ensure the data is sent immediately
-			}
-		}()
-
-		slog.Info("SSE client connected")
-
-		// Listen for date change events or client disconnection
-		for {
-			select {
-			case <-dateChangeChan:
-				// Notify the client about a date change event
-				clientChan <- "date-change"
-			case <-r.Context().Done():
-				// Handle client disconnection
-				slog.Info("SSE client disconnected")
-				close(clientChan)
-				return
-			}
-		}
-	}
 }

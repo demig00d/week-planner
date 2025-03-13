@@ -3,7 +3,6 @@ import * as calendar from "./calendar.js";
 import * as tasks from "./tasks.js";
 import * as ui from "./ui.js";
 import * as utils from "./utils.js";
-import { setupSSE } from "./sse.js";
 import { loadLanguage, translations } from "./localization.js";
 import { dayIds, TASK_COLORS, initialWrapTaskTitles } from "./config.js";
 
@@ -20,6 +19,7 @@ let _displayedWeekStartDate = utils.getStartOfWeek(new Date()); // Use an unders
 let currentTheme = localStorage.getItem("theme") || "auto";
 let displayFullWeekdays = localStorage.getItem("fullWeekdays") === "true";
 let wrapTaskTitles = localStorage.getItem("wrapTaskTitles") !== "false";
+let lastKnownDate = new Date().toLocaleDateString("en-CA"); // Store last known date
 if (localStorage.getItem("wrapTaskTitles") === null) {
   wrapTaskTitles = initialWrapTaskTitles;
 }
@@ -35,6 +35,17 @@ export const setDisplayedWeekStartDate = (newDate) => {
 // Now use the getter internally in app.js where you need the value
 const getDisplayedWeekStartDateInternal = () => _displayedWeekStartDate;
 
+async function checkAndRefreshTasks() {
+  const currentDate = new Date().toLocaleDateString("en-CA");
+  if (currentDate !== lastKnownDate) {
+    lastKnownDate = currentDate;
+    setDisplayedWeekStartDate(utils.getStartOfWeek(new Date()));
+    await calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
+    await ui.refreshTodayTasks();
+    ui.updateTabTitle();
+  }
+}
+
 // Initialization function
 async function initialize() {
   loadLanguage();
@@ -43,8 +54,8 @@ async function initialize() {
   calendar.renderInbox();
   ui.updateSettingsText();
   setupEventListeners();
-  setupSSE();
   ui.updateTabTitle();
+  await checkAndRefreshTasks(); // Initial check on load
 
   if (currentTheme === "auto") {
     window
@@ -56,18 +67,20 @@ async function initialize() {
 }
 //Corrected setupEventListeners
 function setupEventListeners() {
-  prevWeekButton.addEventListener("click", () => {
+  prevWeekButton.addEventListener("click", async () => {
     setDisplayedWeekStartDate(
       utils.addDays(getDisplayedWeekStartDateInternal(), -7),
     ); // Use setter here
-    calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
+    await calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal()); //Await render
+    await checkAndRefreshTasks(); // Check date after navigation
   });
 
-  nextWeekButton.addEventListener("click", () => {
+  nextWeekButton.addEventListener("click", async () => {
     setDisplayedWeekStartDate(
       utils.addDays(getDisplayedWeekStartDateInternal(), 7),
     ); // Use setter here
-    calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
+    await calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal()); //Await render
+    await checkAndRefreshTasks(); // Check date after navigation
   });
 
   settingsBtn.addEventListener("click", ui.toggleSettingsPopup);
@@ -118,7 +131,6 @@ function setupEventListeners() {
         document
           .getElementById("task-details-popup-overlay")
           .dispatchEvent(new CustomEvent("show.popup"));
-        //Removed from transitionend.
       } else {
         document
           .getElementById("task-details-popup-overlay")
@@ -158,6 +170,13 @@ function setupEventListeners() {
         }
       }
     });
+
+  // Refresh tasks when the page becomes visible (tab switch back)
+  document.addEventListener("visibilitychange", async () => {
+    if (document.visibilityState === "visible") {
+      await checkAndRefreshTasks();
+    }
+  });
 }
 
 function handleMonthNameClick() {

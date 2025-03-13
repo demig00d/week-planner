@@ -14,7 +14,7 @@ import (
 //go:embed static/*
 var staticFS embed.FS
 
-func SetupRouter(dateChangeChan chan bool) *mux.Router {
+func SetupRouter() *mux.Router {
 	router := mux.NewRouter()
 
 	// Logging Middleware
@@ -49,9 +49,6 @@ func SetupRouter(dateChangeChan chan bool) *mux.Router {
 	router.HandleFunc("/api/tasks/bulk_update_order", api.BulkUpdateTaskOrderHandler).Methods("POST", "OPTIONS")
 	router.HandleFunc("/api/tasks/{id}", api.DeleteTaskHandler).Methods("DELETE", "OPTIONS")
 	router.HandleFunc("/api/search_tasks", api.SearchTasksHandler).Methods("GET", "OPTIONS")
-
-	// SSE Endpoint - Pass dateChangeChan
-	router.HandleFunc("/api/events", api.DateChangeEventsHandler(dateChangeChan)).Methods("GET")
 
 	fsys, err := fs.Sub(staticFS, "static")
 	if err != nil {
