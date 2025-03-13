@@ -552,36 +552,66 @@ export function toggleSearchPopup() {
   fuzzySearchPopup.style.display = isSearchOpen ? "block" : "none";
   if (isSearchOpen) {
     document.getElementById("fuzzy-search-input").focus();
+    // Reset scroll and clear existing results on opening
+    fuzzySearchResultsList.scrollTop = 0;
+    fuzzySearchResultsList.innerHTML = "";
+    currentPage = 1; // Reset page
+    performSearch(); // Initial search
+    fuzzySearchResultsList.classList.remove("scrollable"); // Remove class on open
   } else {
     fuzzySearchResultsList.innerHTML = "";
     document.getElementById("fuzzy-search-input").value = "";
+    removeScrollListener(); // Make sure to remove listener when closing
+    fuzzySearchResultsList.classList.remove("scrollable"); // Ensure class is removed on close
   }
 }
+
+let currentPage = 1; // Track current page for pagination
+const tasksPerPage = 10; // Define tasks per page
+let searchQuery = ""; // Store the current search query
+let loadingMoreResults = false; // Flag to prevent concurrent loading
 
 export async function handleSearchInput() {
   clearTimeout(searchTimeout);
   const query = document.getElementById("fuzzy-search-input").value.trim();
-  searchTimeout = setTimeout(async () => {
-    await displayFuzzySearchResults(query);
-  }, 300);
+  searchQuery = query; // Update searchQuery
+  currentPage = 1; // Reset to first page on new input
+
+  searchTimeout = setTimeout(performSearch, 300);
 }
 
-async function displayFuzzySearchResults(query) {
-  if (query.length === 0) {
-    fuzzySearchResultsList.innerHTML = "";
+async function performSearch() {
+  fuzzySearchResultsList.innerHTML = ""; // Clear results on new search
+  if (searchQuery.trim().length === 0) {
+    removeScrollListener(); // No query, no scroll loading
     return;
   }
+  await displayFuzzySearchResults(searchQuery, currentPage, tasksPerPage);
+  setupScrollListener(); // Enable scroll loading after initial results
+}
 
-  const tasks = await api.searchTasks(query);
+// displayFuzzySearchResults fetches and displays search results with pagination
+async function displayFuzzySearchResults(query, page, pageSize) {
+  // Accept page and pageSize
+  if (loadingMoreResults) return; // Prevent loading if already loading
+  loadingMoreResults = true; // Set loading flag
 
-  fuzzySearchResultsList.innerHTML = "";
+  if (page === 1) {
+    fuzzySearchResultsList.innerHTML = ""; // Clear results for first page
+    fuzzySearchResultsList.classList.remove("scrollable"); // Remove scrollable class on new search
+  }
 
-  if (tasks.length === 0) {
+  const tasks = await api.searchTasks(query, pageSize, page); // Pass pageSize and page to api.searchTasks
+  loadingMoreResults = false; // Clear loading flag
+
+  if (tasks.length === 0 && page === 1) {
     const noResultsItem = document.createElement("li");
     noResultsItem.textContent =
       translations[localStorage.getItem("language") || "ru"].noResults;
     fuzzySearchResultsList.appendChild(noResultsItem);
-  } else {
+    removeScrollListener(); // No results, no need for scroll loading
+    fuzzySearchResultsList.classList.remove("scrollable"); // Ensure class is removed if no results
+  } else if (tasks.length > 0) {
     tasks.forEach((task) => {
       const listItem = document.createElement("li");
       const taskDate = task.due_date
@@ -599,6 +629,8 @@ async function displayFuzzySearchResults(query) {
         fuzzySearchPopup.style.display = "none";
         fuzzySearchResultsList.innerHTML = "";
         document.getElementById("fuzzy-search-input").value = "";
+        removeScrollListener(); // Remove listener after selection
+        fuzzySearchResultsList.classList.remove("scrollable"); // Remove class on close
 
         if (task.due_date) {
           setDisplayedWeekStartDate(
@@ -617,6 +649,22 @@ async function displayFuzzySearchResults(query) {
       });
       fuzzySearchResultsList.appendChild(listItem);
     });
+
+    if (tasks.length < pageSize) {
+      removeScrollListener(); // No more results to load
+    }
+
+    // Check if scrollable and add class
+    if (
+      fuzzySearchResultsList.scrollHeight > fuzzySearchResultsList.clientHeight
+    ) {
+      fuzzySearchResultsList.classList.add("scrollable");
+    } else {
+      fuzzySearchResultsList.classList.remove("scrollable"); // Ensure class is removed if not scrollable
+    }
+  } else if (tasks.length === 0 && page > 1) {
+    removeScrollListener(); // No more results on subsequent pages either
+    fuzzySearchResultsList.classList.remove("scrollable"); // Ensure class is removed if no more results
   }
 }
 
@@ -940,3 +988,34 @@ document
     adjustTextareaHeight();
     requestAnimationFrame(renderDatePicker);
   });
+
+let scrollEventListener = null; // To hold the scroll event listener
+
+function setupScrollListener() {
+  if (!scrollEventListener) {
+    scrollEventListener = async () => {
+      if (isSearchOpen && !loadingMoreResults) {
+        const list = fuzzySearchResultsList;
+        if (list.scrollTop + list.clientHeight >= list.scrollHeight - 10) {
+          // Trigger load when near bottom
+          removeScrollListener(); // Avoid multiple triggers
+          currentPage++;
+          await displayFuzzySearchResults(
+            searchQuery,
+            currentPage,
+            tasksPerPage,
+          );
+          setupScrollListener(); // Re-enable after loading
+        }
+      }
+    };
+    fuzzySearchResultsList.addEventListener("scroll", scrollEventListener);
+  }
+}
+
+function removeScrollListener() {
+  if (scrollEventListener) {
+    fuzzySearchResultsList.removeEventListener("scroll", scrollEventListener);
+    scrollEventListener = null;
+  }
+}

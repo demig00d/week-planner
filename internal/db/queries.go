@@ -171,19 +171,34 @@ func DeleteTask(id int) error {
 	return nil
 }
 
-func SearchTasks(query string) (Tasks, error) {
+// SearchTasks performs a fuzzy search for tasks with pagination, ranking by text match and date recency.
+func SearchTasks(query string, limit int, offset int) (Tasks, error) {
 	var tasks Tasks
 	queryString := fmt.Sprintf(`
-        SELECT tasks.*
+        SELECT tasks.*, 
+            (CASE 
+                WHEN tasks.title LIKE ? THEN 1 
+                ELSE 0 
+             END) AS exact_match,
+            ABS(JULIANDAY('now') - JULIANDAY(tasks.due_date)) AS days_diff
         FROM tasks_fts
         JOIN tasks ON tasks_fts.rowid = tasks.id
         WHERE tasks_fts MATCH ?
-        ORDER BY rank
+        ORDER BY 
+            exact_match DESC,
+            -- Prioritize date proximity over FTS rank
+            (100.0 / (days_diff + 1)) + (rank * 0.5) DESC,
+            days_diff ASC,  -- Explicit proximity sort
+            tasks.due_date DESC  -- Tiebreaker
+        LIMIT ? OFFSET ?
     `)
 
-	slog.Debug("Searching tasks with query", "query", query)
+	exactQuery := query + "%"
+	args := []interface{}{exactQuery, query + "*", limit, offset}
 
-	if err := GetDB().Raw(queryString, query+"*").Scan(&tasks).Error; err != nil {
+	slog.Debug("Searching tasks with query", "query", query, "limit", limit, "offset", offset)
+
+	if err := GetDB().Raw(queryString, args...).Scan(&tasks).Error; err != nil {
 		return tasks, fmt.Errorf("searchTasks: %w", err)
 	}
 	return tasks, nil

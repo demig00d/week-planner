@@ -164,10 +164,11 @@ export async function saveInboxTitle(newTitle) {
   }
 }
 
-export async function searchTasks(query) {
+// searchTasks performs a fuzzy search for tasks with pagination.
+export async function searchTasks(query, pageSize, page) {
   try {
     const response = await fetch(
-      `${API_BASE}/search_tasks?query=${encodeURIComponent(query)}`,
+      `${API_BASE}/search_tasks?query=${encodeURIComponent(query)}&pageSize=${pageSize}&page=${page}`,
     );
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);

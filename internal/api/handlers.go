@@ -243,7 +243,34 @@ func SearchTasksHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tasks, err := db.SearchTasks(query)
+	// Pagination parameters from query string
+	pageStr := r.URL.Query().Get("page")
+	pageSizeStr := r.URL.Query().Get("pageSize")
+
+	page := 1      // Default page number
+	pageSize := 10 // Default page size
+
+	if pageSizeStr != "" {
+		ps, err := strconv.Atoi(pageSizeStr)
+		if err != nil || ps <= 0 {
+			handleError(w, r, db.NewAPIError(400, "Invalid pageSize parameter"))
+			return
+		}
+		pageSize = ps
+	}
+
+	if pageStr != "" {
+		p, err := strconv.Atoi(pageStr)
+		if err != nil || p <= 0 {
+			handleError(w, r, db.NewAPIError(400, "Invalid page parameter"))
+			return
+		}
+		page = p
+	}
+
+	offset := (page - 1) * pageSize
+
+	tasks, err := db.SearchTasks(query, pageSize, offset)
 	if err != nil {
 		handleError(w, r, err)
 		return

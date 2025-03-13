@@ -9,8 +9,8 @@ import (
 
 type Task struct {
 	ID          int      `gorm:"primaryKey;autoIncrement" json:"id"`
-	Title       string   `gorm:"not null" json:"title"`
-	DueDate     NullTime `gorm:"type:date" json:"due_date"`
+	Title       string   `gorm:"not null;index:idx_tasks_title_duedate" json:"title"`
+	DueDate     NullTime `gorm:"type:date;index:idx_tasks_title_duedate" json:"due_date"`
 	Completed   int      `gorm:"default:0" json:"completed"`
 	TaskOrder   int      `json:"order"`
 	Color       string   `gorm:"default:''" json:"color"`

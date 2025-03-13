@@ -944,7 +944,12 @@ body.dark-theme .event[data-task-color="orange"] {
   list-style: none;
   padding: 0;
   margin: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  max-height: 420px;
+}
+
+.fuzzy-search-popup ul.scrollable {
+  border-right: 1px solid var(--day-border);
 }
 
 .fuzzy-search-popup li {

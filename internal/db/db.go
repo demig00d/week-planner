@@ -28,7 +28,7 @@ func InitDB() {
 	db, err = gorm.Open(sqlite.Open(dbFile+"?_journal_mode=WAL&_sync=FULL"), &gorm.Config{})
 	if err != nil {
 		slog.Error("failed to connect to database", "error", err)
-		panic(err) // Fatal error.  Application should not continue.
+		panic(err)
 	}
 
 	if newDB {
@@ -64,6 +64,15 @@ func InitDB() {
 
 		slog.Info("Database creation and migration completed.")
 	} else {
+		// Add index for existing databases
+		err := db.Exec(`
+            CREATE INDEX IF NOT EXISTS idx_tasks_title_duedate 
+            ON tasks(title, due_date)
+        `).Error
+		if err != nil {
+			slog.Error("Failed to create index", "error", err)
+			panic(err)
+		}
 		slog.Info("Database opened successfully.")
 	}
 }
