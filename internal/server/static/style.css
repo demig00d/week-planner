@@ -985,13 +985,12 @@ body.dark-theme .fuzzy-search-popup li:hover {
 
 /* Custom Date Picker Styles */
 .date-picker-container {
-  position: absolute;
-  top: auto;
-  bottom: 0;
-  right: 0;
+  position: fixed;
   z-index: 1100;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   display: none;
+  top: auto;
+  left: auto;
 }
 
 .date-picker-header {

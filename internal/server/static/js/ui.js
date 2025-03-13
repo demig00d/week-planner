@@ -110,6 +110,7 @@ export function handleGlobalClick(event) {
     fuzzySearchPopup.style.display = "none";
     fuzzySearchResultsList.innerHTML = "";
     document.getElementById("fuzzy-search-input").value = "";
+    return;
   }
   if (
     datePickerVisible &&
@@ -272,7 +273,6 @@ export async function openTaskDetails(taskId) {
       taskDescriptionTextarea.style.display = "block";
     }
 
-    // Adjust height dynamically
     requestAnimationFrame(() => {
       if (isDescriptionRenderedMode) {
         toggleDescriptionModeBtn.classList.add("rendered-mode");
@@ -286,11 +286,10 @@ export async function openTaskDetails(taskId) {
 
     const colorSwatches = document.querySelectorAll(".color-swatch");
     colorSwatches.forEach((swatch) => {
-      swatch.classList.remove("selected-color"); // Clear all selections first
+      swatch.classList.remove("selected-color");
     });
 
-    // Select the correct color swatch based on task.color
-    const initialColor = task.color || "no-color"; // Default to 'no-color' if task.color is empty
+    const initialColor = task.color || "no-color";
     const swatchToSelect = document.querySelector(
       `.color-swatch[data-color="${initialColor}"]`,
     );
@@ -305,14 +304,12 @@ export async function openTaskDetails(taskId) {
           color = "";
         }
 
-        // Check if the color is actually being changed before making API call
         const currentTaskDetails = await api.fetchTaskDetails(
           currentTaskBeingViewed,
         );
         if (currentTaskDetails && currentTaskDetails.color === color) {
-          // If the color is not changing, just update UI and exit to prevent "No fields to update" error
-          colorSwatches.forEach((sw) => sw.classList.remove("selected-color")); // Clear all
-          swatch.classList.add("selected-color"); // Select current
+          colorSwatches.forEach((sw) => sw.classList.remove("selected-color"));
+          swatch.classList.add("selected-color");
           const taskElement = document.querySelector(
             `.event[data-task-id="${currentTaskBeingViewed}"]`,
           );
@@ -320,7 +317,7 @@ export async function openTaskDetails(taskId) {
             taskElement.dataset.taskColor = color;
             taskElement.style.backgroundColor = getTaskBackgroundColor(color);
           }
-          return; // Exit without making API call
+          return;
         }
 
         if (currentTaskBeingViewed) {
@@ -388,7 +385,7 @@ export function adjustTextareaHeight() {
   );
 
   if (isDescriptionRenderedMode) {
-    taskDescriptionRendered.style.height = "auto"; // Reset to auto to measure content
+    taskDescriptionRendered.style.height = "auto";
     const renderedScrollHeight = taskDescriptionRendered.scrollHeight;
     const newHeight = Math.min(
       Math.max(renderedScrollHeight, parseInt(minDescriptionHeight)),
@@ -396,7 +393,7 @@ export function adjustTextareaHeight() {
     );
     taskDescriptionRendered.style.height = `${newHeight}px`;
   } else {
-    taskDescriptionTextarea.style.height = "auto"; // Reset to auto to measure content
+    taskDescriptionTextarea.style.height = "auto";
     const textareaScrollHeight = taskDescriptionTextarea.scrollHeight;
     const newHeight = Math.min(
       Math.max(textareaScrollHeight, parseInt(minDescriptionHeight)),
@@ -714,7 +711,7 @@ async function updateTaskDueDate(newDate) {
   } else {
     setDisplayedWeekStartDate(utils.getStartOfWeek(new Date()));
     calendar.renderWeekCalendar(utils.getStartOfWeek(new Date()));
-    calendar.renderInbox(); // Re-render inbox when date is set to null (moved to inbox)
+    calendar.renderInbox();
   }
   await tasks.renderAllTasks();
 
@@ -748,8 +745,14 @@ taskDetailsDateInput.addEventListener("click", (event) => {
   event.stopPropagation();
   datePickerVisible = !datePickerVisible;
   datePickerContainer.style.display = datePickerVisible ? "block" : "none";
+
   if (datePickerVisible) {
     renderDatePicker();
+
+    const dateDetailsDateRect = taskDetailsDateInput.getBoundingClientRect();
+    datePickerContainer.style.position = "fixed";
+    datePickerContainer.style.top = `${dateDetailsDateRect.bottom + window.scrollY + 2}px`;
+    datePickerContainer.style.left = `${dateDetailsDateRect.left + window.scrollX}px`;
   }
 });
 
@@ -903,3 +906,10 @@ function updateFavicon(taskCount) {
 export async function refreshTodayTasks() {
   todayTasks = await api.fetchTodayTasks();
 }
+
+document
+  .getElementById("task-details-popup-overlay")
+  .addEventListener("show.popup", () => {
+    adjustTextareaHeight();
+    requestAnimationFrame(renderDatePicker);
+  });
