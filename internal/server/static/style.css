@@ -390,6 +390,7 @@ body.dark-theme .event[data-task-color="orange"] {
   cursor: pointer;
   padding: 0;
   line-height: 1;
+  margin-right: -2px;
   color: var(--text-color);
   transition: opacity 0.2s ease-in-out;
 }
