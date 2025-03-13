@@ -2,12 +2,13 @@ package server
 
 import (
 	"embed"
-	"github.com/gorilla/mux"
 	"io/fs"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 	"week-planner/internal/api"
+
+	"github.com/gorilla/mux"
 )
 
 //go:embed static/*
@@ -29,7 +30,11 @@ func SetupRouter(dateChangeChan chan bool) *mux.Router {
 				return
 			}
 
-			log.Printf("Incoming Request: Method=%s, URL=%s, Timestamp=%s", r.Method, r.URL.Path, startTime.Format(time.RFC3339))
+			slog.InfoContext(r.Context(), "Incoming Request",
+				"method", r.Method,
+				"url", r.URL.Path,
+				"timestamp", startTime.Format(time.RFC3339),
+			)
 
 			next.ServeHTTP(w, r)
 		})

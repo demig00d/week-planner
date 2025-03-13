@@ -1,7 +1,7 @@
 package db
 
 import (
-	"log"
+	"log/slog"
 	"os"
 
 	"gorm.io/driver/sqlite"
@@ -18,25 +18,28 @@ func InitDB() {
 	dbFile := "tasks.db"
 	newDB := false
 	if _, err := os.Stat(dbFile); os.IsNotExist(err) {
-		log.Println("tasks.db does not exist, creating database...")
+		slog.Info("tasks.db does not exist, creating database...")
 		newDB = true
 	} else {
-		log.Println("tasks.db exists, opening database...")
+		slog.Info("tasks.db exists, opening database...")
 	}
 
 	var err error
 	db, err = gorm.Open(sqlite.Open(dbFile+"?_journal_mode=WAL&_sync=FULL"), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
+		slog.Error("failed to connect to database", "error", err)
+		panic(err) // Fatal error.  Application should not continue.
 	}
 
 	if newDB {
-		log.Println("Running auto migration...")
+		slog.Info("Running auto migration...")
 		if err := db.AutoMigrate(&Task{}); err != nil {
-			log.Fatalf("Failed to auto migrate database: %v", err)
+			slog.Error("Failed to auto migrate database", "error", err)
+			panic(err)
 		}
 		if err := db.Exec("CREATE VIRTUAL TABLE IF NOT EXISTS tasks_fts USING fts5(title, description, content='tasks', content_rowid='id')").Error; err != nil {
-			log.Fatalf("Failed to create FTS table: %v", err)
+			slog.Error("Failed to create FTS table", "error", err)
+			panic(err)
 		}
 		initTriggers()
 
@@ -47,19 +50,21 @@ func InitDB() {
 			Value string
 		}
 		if err := db.AutoMigrate(&Setting{}); err != nil {
-			log.Fatalf("Failed to auto migrate settings table: %v", err)
+			slog.Error("Failed to auto migrate settings table", "error", err)
+			panic(err)
 		}
 		var count int64
 		db.Model(&Setting{}).Where("key = ?", "inbox_title").Count(&count)
 		if count == 0 {
 			if err := db.Create(&Setting{Key: "inbox_title", Value: "📦 Inbox"}).Error; err != nil {
-				log.Fatalf("Failed to insert default setting: %v", err)
+				slog.Error("Failed to insert default setting", "error", err)
+				panic(err)
 			}
 		}
 
-		log.Println("Database creation and migration completed.")
+		slog.Info("Database creation and migration completed.")
 	} else {
-		log.Println("Database opened successfully.")
+		slog.Info("Database opened successfully.")
 	}
 }
 
@@ -75,7 +80,7 @@ func initTriggers() {
         END;
     `)
 	if err != nil {
-		log.Fatalf("Error creating INSERT trigger: %v", err)
+		panic("Error creating INSERT trigger")
 	}
 
 	// Trigger for DELETE
@@ -86,7 +91,7 @@ func initTriggers() {
         END;
     `)
 	if err != nil {
-		log.Fatalf("Error creating DELETE trigger: %v", err)
+		panic("Error creating DELETE trigger")
 	}
 
 	// Trigger for UPDATE
@@ -100,8 +105,8 @@ func initTriggers() {
         END;
     `)
 	if err != nil {
-		log.Fatalf("Error creating UPDATE trigger: %v", err)
+		panic("Error creating UPDATE trigger")
 	}
 
-	log.Println("Triggers initialized successfully.")
+	slog.Info("Triggers initialized successfully.")
 }

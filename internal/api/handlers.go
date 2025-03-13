@@ -3,20 +3,22 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
 	"week-planner/internal/config"
 	"week-planner/internal/db"
+	"week-planner/internal/jsonlog"
+
+	"log/slog"
 
 	"github.com/gorilla/mux"
 )
 
 // handleError handles an error by logging it and sending an appropriate HTTP response.
 // If the error is an instance of *db.APIError, its WriteResponse method is used for a detailed response.
-func handleError(w http.ResponseWriter, err error) {
-	log.Printf("Error: %v", err)
+func handleError(w http.ResponseWriter, r *http.Request, err error) {
+	jsonlog.LogCtx(r.Context(), slog.LevelError, err.Error(), "error", err)
 
 	// If the error is of type APIError, use its method to respond
 	apiErr, ok := err.(*db.APIError)
@@ -71,7 +73,7 @@ func GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 		r.URL.Query().Get("end_date"),
 	)
 	if err != nil {
-		handleError(w, err)
+		handleError(w, r, err)
 		return
 	}
 	json.NewEncoder(w).Encode(tasksToJSON(tasks))
@@ -82,7 +84,7 @@ func GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 func GetInboxTitleHandler(w http.ResponseWriter, r *http.Request) {
 	title, err := db.GetInboxTitle()
 	if err != nil {
-		handleError(w, err)
+		handleError(w, r, err)
 		return
 	}
 	json.NewEncoder(w).Encode(map[string]string{"inbox_title": title})
@@ -93,11 +95,11 @@ func GetInboxTitleHandler(w http.ResponseWriter, r *http.Request) {
 func UpdateInboxTitleHandler(w http.ResponseWriter, r *http.Request) {
 	var data map[string]string
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		handleError(w, db.NewAPIError(400, "Invalid request"))
+		handleError(w, r, db.NewAPIError(400, "Invalid request"))
 		return
 	}
 	if err := db.UpdateInboxTitle(data["inbox_title"]); err != nil {
-		handleError(w, err)
+		handleError(w, r, err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -114,22 +116,22 @@ func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		Description string `json:"description"`
 	}
 
-	log.Println("Received request to create task")
+	slog.Debug("Received request to create task")
 
 	// Decode JSON from the request body
 	err := json.NewDecoder(r.Body).Decode(&taskInput)
 	if err != nil {
-		log.Printf("Error decoding request body: %v", err)
-		handleError(w, db.NewAPIError(400, "Invalid JSON"))
+		slog.Debug("Error decoding request body", "error", err)
+		handleError(w, r, db.NewAPIError(400, "Invalid JSON"))
 		return
 	}
 	defer r.Body.Close()
 
-	log.Printf("Received task data: %+v", taskInput)
+	slog.Debug("Received task data", "task_data", taskInput)
 
 	// Check required field title
 	if taskInput.Title == "" {
-		handleError(w, db.NewAPIError(400, "Title is required"))
+		handleError(w, r, db.NewAPIError(400, "Title is required"))
 		return
 	}
 
@@ -138,8 +140,8 @@ func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	if taskInput.DueDate != "" {
 		parsedTime, err := time.Parse(config.DateFormat, taskInput.DueDate)
 		if err != nil {
-			log.Printf("Error parsing due date: %v", err)
-			handleError(w, db.NewAPIError(400, "Invalid date format"))
+			slog.Debug("Error parsing due date", "error", err)
+			handleError(w, r, db.NewAPIError(400, "Invalid date format"))
 			return
 		}
 		dueDateNullTime = db.NullTime{Time: parsedTime, Valid: true}
@@ -156,12 +158,12 @@ func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	createdTask, err := db.CreateTask(task)
 	if err != nil {
-		log.Printf("Error creating task: %v", err)
-		handleError(w, err)
+		slog.Debug("Error creating task", "error", err)
+		handleError(w, r, err)
 		return
 	}
 
-	log.Printf("Created task: %+v", createdTask)
+	slog.Debug("Created task", "task", createdTask)
 
 	// Send response with the created task
 	w.Header().Set("Content-Type", "application/json")
@@ -175,7 +177,7 @@ func GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
 	task, err := db.GetTask(id)
 	if err != nil {
-		handleError(w, err)
+		handleError(w, r, err)
 		return
 	}
 	json.NewEncoder(w).Encode(taskToJSON(task))
@@ -187,14 +189,14 @@ func UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
 	var updates map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
-		handleError(w, db.NewAPIError(400, "Invalid request"))
+		handleError(w, r, db.NewAPIError(400, "Invalid request"))
 		return
 	}
 
-	log.Printf("Updates received in updateTaskHandler: %+v", updates)
+	slog.Debug("Updates received in updateTaskHandler", "task_id", id, "updates", updates)
 
 	if err := db.UpdateTask(id, updates); err != nil {
-		handleError(w, err)
+		handleError(w, r, err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -205,11 +207,11 @@ func UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 func BulkUpdateTaskOrderHandler(w http.ResponseWriter, r *http.Request) {
 	var tasks db.Tasks
 	if err := json.NewDecoder(r.Body).Decode(&tasks); err != nil {
-		handleError(w, db.NewAPIError(400, "Invalid request"))
+		handleError(w, r, db.NewAPIError(400, "Invalid request"))
 		return
 	}
 	if err := db.BulkUpdateTaskOrder(tasks); err != nil {
-		handleError(w, err)
+		handleError(w, r, err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -218,9 +220,16 @@ func BulkUpdateTaskOrderHandler(w http.ResponseWriter, r *http.Request) {
 // DeleteTaskHandler handles HTTP requests for deleting a task by its ID.
 // It extracts the ID from the URL, deletes the task from the database, and returns the status of the operation.
 func DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
-	id, _ := strconv.Atoi(mux.Vars(r)["id"])
+	id, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		handleError(w, r, db.NewAPIError(400, "Invalid task ID"))
+		return
+	}
+
+	slog.Debug("Deleting task", "task_id", id)
+
 	if err := db.DeleteTask(id); err != nil {
-		handleError(w, err)
+		handleError(w, r, err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -231,13 +240,13 @@ func DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 func SearchTasksHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("query")
 	if query == "" {
-		handleError(w, db.NewAPIError(400, "Query parameter required"))
+		handleError(w, r, db.NewAPIError(400, "Query parameter required"))
 		return
 	}
 
 	tasks, err := db.SearchTasks(query)
 	if err != nil {
-		handleError(w, err)
+		handleError(w, r, err)
 		return
 	}
 	json.NewEncoder(w).Encode(tasksToJSON(tasks))
@@ -272,7 +281,7 @@ func DateChangeEventsHandler(dateChangeChan chan bool) http.HandlerFunc {
 			}
 		}()
 
-		log.Println("SSE client connected")
+		slog.Info("SSE client connected")
 
 		// Listen for date change events or client disconnection
 		for {
@@ -282,7 +291,7 @@ func DateChangeEventsHandler(dateChangeChan chan bool) http.HandlerFunc {
 				clientChan <- "date-change"
 			case <-r.Context().Done():
 				// Handle client disconnection
-				log.Println("SSE client disconnected")
+				slog.Info("SSE client disconnected")
 				close(clientChan)
 				return
 			}

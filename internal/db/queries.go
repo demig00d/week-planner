@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"week-planner/internal/config"
@@ -179,6 +180,9 @@ func SearchTasks(query string) (Tasks, error) {
         WHERE tasks_fts MATCH ?
         ORDER BY rank
     `)
+
+	slog.Debug("Searching tasks with query", "query", query)
+
 	if err := GetDB().Raw(queryString, query+"*").Scan(&tasks).Error; err != nil {
 		return tasks, fmt.Errorf("searchTasks: %w", err)
 	}
