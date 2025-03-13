@@ -659,6 +659,8 @@ async function updateTaskDueDate(newDate) {
   const taskElement = document.querySelector(
     `.event[data-task-id="${currentTaskBeingViewed}"]`,
   );
+  const wasInboxTask =
+    taskElement && taskElement.parentNode.parentNode.id === "inbox";
   const wasTodayTask =
     taskElement &&
     taskElement.dataset.dueDate === new Date().toLocaleDateString("en-CA");
@@ -682,11 +684,16 @@ async function updateTaskDueDate(newDate) {
     const newDueDate = new Date(newDate);
     setDisplayedWeekStartDate(utils.getStartOfWeek(newDueDate));
     calendar.renderWeekCalendar(utils.getStartOfWeek(newDueDate));
+    if (wasInboxTask) {
+      calendar.renderInbox();
+    }
   } else {
     setDisplayedWeekStartDate(utils.getStartOfWeek(new Date()));
     calendar.renderWeekCalendar(utils.getStartOfWeek(new Date()));
+    calendar.renderInbox(); // Re-render inbox when date is set to null (moved to inbox)
   }
   await tasks.renderAllTasks();
+
   requestAnimationFrame(() => {
     highlightTask(currentTaskBeingViewed);
   });
