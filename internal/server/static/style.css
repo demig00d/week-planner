@@ -92,6 +92,7 @@ body.dark-theme {
   --task-color-yellow-dark: #1f1f1f;
   --task-color-pink-dark: #2a1f2a;
   --task-color-orange-dark: #1f1f0a;
+  --task-border-color: #444;
   --link-color-dark: #66a3ff;
 }
 
