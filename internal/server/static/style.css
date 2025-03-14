@@ -50,6 +50,13 @@ body {
   --task-color-orange-light: #ffe0b2;
   --task-border-color: #ccc;
   --link-color-light: #007bff;
+
+  --task-color-blue-dark: #000b1f;
+  --task-color-green-dark: #001f1f;
+  --task-color-yellow-dark: #1f1f1f;
+  --task-color-pink-dark: #2a1f2a;
+  --task-color-orange-dark: #1f1f0a;
+  --link-color-dark: #66a3ff;
 }
 
 body.dark-theme {
@@ -67,12 +74,24 @@ body.dark-theme {
   --dim-text-color: #aaa;
   --dim-task-text-color: #999;
   --dim-highlight-text-color: #425b8b;
+
+  /* In dark theme, OVERRIDE the LIGHT variables with DARK versions */
+  --task-color-blue-light: var(
+    --task-color-blue-dark
+  ); /* Override light with dark */
+  --task-color-green-light: var(--task-color-green-dark);
+  --task-color-yellow-light: var(--task-color-yellow-dark);
+  --task-color-pink-light: var(--task-color-pink-dark);
+  --task-color-orange-light: var(--task-color-orange-dark);
+  --link-color-light: var(
+    --link-color-dark
+  ); /* Override light link with dark link */
+
   --task-color-blue-dark: #000b1f;
   --task-color-green-dark: #001f1f;
   --task-color-yellow-dark: #1f1f1f;
   --task-color-pink-dark: #2a1f2a;
   --task-color-orange-dark: #1f1f0a;
-  --task-border-color: #444;
   --link-color-dark: #66a3ff;
 }
 
@@ -821,6 +840,41 @@ body.dark-theme .event[data-task-color="orange"] {
   margin-bottom: 5px;
 }
 
+.color-swatch.blue-swatch {
+  background-color: var(--task-color-blue-light);
+}
+body.dark-theme .color-swatch.blue-swatch {
+  background-color: var(--task-color-blue-dark);
+}
+
+.color-swatch.green-swatch {
+  background-color: var(--task-color-green-light);
+}
+body.dark-theme .color-swatch.green-swatch {
+  background-color: var(--task-color-green-dark);
+}
+
+.color-swatch.yellow-swatch {
+  background-color: var(--task-color-yellow-light);
+}
+body.dark-theme .color-swatch.yellow-swatch {
+  background-color: var(--task-color-yellow-dark);
+}
+
+.color-swatch.pink-swatch {
+  background-color: var(--task-color-pink-light);
+}
+body.dark-theme .color-swatch.pink-swatch {
+  background-color: var(--task-color-pink-dark);
+}
+
+.color-swatch.orange-swatch {
+  background-color: var(--task-color-orange-light);
+}
+body.dark-theme .color-swatch.orange-swatch {
+  background-color: var(--task-color-orange-dark);
+}
+
 .color-swatch i {
   font-size: 0.8em;
   position: relative;
@@ -979,6 +1033,41 @@ body.dark-theme .fuzzy-search-popup li:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
   display: block;
+}
+
+.fuzzy-search-task-title.blue-title-highlight {
+  color: var(--task-color-blue-dark); /* Dark blue for light theme */
+}
+body.dark-theme .fuzzy-search-task-title.blue-title-highlight {
+  color: var(--task-color-blue-light); /* Light blue for dark theme */
+}
+
+.fuzzy-search-task-title.green-title-highlight {
+  color: var(--task-color-green-dark);
+}
+body.dark-theme .fuzzy-search-task-title.green-title-highlight {
+  color: var(--task-color-green-light);
+}
+
+.fuzzy-search-task-title.yellow-title-highlight {
+  color: var(--task-color-yellow-dark);
+}
+body.dark-theme .fuzzy-search-task-title.yellow-title-highlight {
+  color: var(--task-color-yellow-light);
+}
+
+.fuzzy-search-task-title.pink-title-highlight {
+  color: var(--task-color-pink-dark);
+}
+body.dark-theme .fuzzy-search-task-title.pink-title-highlight {
+  color: var(--task-color-pink-light);
+}
+
+.fuzzy-search-task-title.orange-title-highlight {
+  color: var(--task-color-orange-dark);
+}
+body.dark-theme .fuzzy-search-task-title.orange-title-highlight {
+  color: var(--task-color-orange-light);
 }
 
 .fuzzy-search-task-date {

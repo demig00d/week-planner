@@ -627,6 +627,13 @@ async function displayFuzzySearchResults(query, page, pageSize) {
                 <div class="fuzzy-search-task-title">${task.title}</div>
                 <div class="fuzzy-search-task-date">${taskDate}</div>
             `;
+      const taskTitleElement = listItem.querySelector(
+        ".fuzzy-search-task-title",
+      );
+      if (task.color && task.color !== "no-color") {
+        const colorClass = `${task.color}-title-highlight`;
+        taskTitleElement.classList.add(colorClass);
+      }
       listItem.addEventListener("click", () => {
         isSearchOpen = false;
         fuzzySearchPopup.style.display = "none";
