@@ -54,6 +54,12 @@ async function initialize() {
   calendar.renderInbox();
   ui.updateSettingsText();
   setupEventListeners();
+  // Set initial checkbox states based on localStorage
+  document.getElementById("full-weekdays-checkbox").checked =
+    displayFullWeekdays;
+  document.getElementById("wrap-task-titles-checkbox").checked = wrapTaskTitles;
+  ui.handleCheckboxChange(document.getElementById("full-weekdays-checkbox"));
+  ui.handleCheckboxChange(document.getElementById("wrap-task-titles-checkbox"));
   ui.updateTabTitle();
   await checkAndRefreshTasks(); // Initial check on load
 
