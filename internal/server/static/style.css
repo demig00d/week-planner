@@ -1222,3 +1222,7 @@ body.dark-theme .task-details-popup-content .task-description-rendered a {
   color: inherit !important;
   margin-right: 0;
 }
+
+.highlighted-task {
+  border: 2px solid var(--highlight-text-color) !important;
+}

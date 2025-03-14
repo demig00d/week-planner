@@ -669,15 +669,26 @@ async function displayFuzzySearchResults(query, page, pageSize) {
 }
 
 function highlightTask(taskId) {
-  const taskElement = document.querySelector(
-    `.event[data-task-id="${taskId}"]`,
-  );
-  if (taskElement) {
-    taskElement.style.border = "2px solid var(--highlight-text-color)";
-    setTimeout(() => {
-      taskElement.style.border = "";
-    }, 3000);
-  }
+  setTimeout(() => {
+    const taskElement = document.querySelector(
+      `.event[data-task-id="${taskId}"]`,
+    );
+
+    if (taskElement) {
+      document.querySelectorAll(".highlighted-task").forEach((el) => {
+        el.classList.remove("highlighted-task");
+      });
+
+      taskElement.classList.add("highlighted-task");
+      taskElement.style.border = "2px solid var(--highlight-text-color)";
+      taskElement.scrollIntoView({ behavior: "smooth", block: "center" });
+
+      setTimeout(() => {
+        taskElement.style.border = "";
+        taskElement.classList.remove("highlighted-task");
+      }, 3000);
+    }
+  }, 50); // 50ms delay to ensure DOM is updated after search result click
 }
 
 function renderDatePicker() {
