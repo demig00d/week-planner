@@ -129,6 +129,9 @@ export function handleGlobalClick(event) {
       closeTaskDetailsPopup();
     }
   }
+  if (event.target === fuzzySearchPopup) {
+    closeAllPopups();
+  }
 }
 
 export function setTheme(theme) {
@@ -552,7 +555,7 @@ export function handleTaskCompletionUI(taskElement, completed) {
 
 export function toggleSearchPopup() {
   isSearchOpen = !isSearchOpen;
-  fuzzySearchPopup.style.display = isSearchOpen ? "block" : "none";
+  fuzzySearchPopup.style.display = isSearchOpen ? "flex" : "none";
   if (isSearchOpen) {
     document.getElementById("fuzzy-search-input").focus();
     // Reset scroll and clear existing results on opening
@@ -617,6 +620,7 @@ async function displayFuzzySearchResults(query, page, pageSize) {
   } else if (tasks.length > 0) {
     tasks.forEach((task) => {
       const listItem = document.createElement("li");
+      if (task.completed === 1) listItem.classList.add("completed-task");
       const taskDate = task.due_date
         ? new Date(task.due_date).toLocaleDateString(
             localStorage.getItem("language") || "ru",
