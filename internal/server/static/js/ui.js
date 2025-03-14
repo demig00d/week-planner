@@ -40,6 +40,9 @@ const datePickerGrid = document.getElementById("date-picker-grid");
 const fuzzySearchPopup = document.getElementById("fuzzy-search-popup");
 const fuzzySearchResultsList = document.getElementById("fuzzy-search-results");
 
+const exportDbBtn = document.getElementById("export-db-btn");
+const importDbInput = document.getElementById("import-db-input");
+
 let currentTaskBeingViewed = null;
 let isDescriptionRenderedMode = false;
 let minDescriptionHeight = "50px";
@@ -1028,5 +1031,52 @@ function removeScrollListener() {
   if (scrollEventListener) {
     fuzzySearchResultsList.removeEventListener("scroll", scrollEventListener);
     scrollEventListener = null;
+  }
+}
+
+exportDbBtn.addEventListener("click", handleExportDb);
+importDbInput.addEventListener("change", handleImportDb);
+
+function handleExportDb() {
+  window.location.href = "/api/export_db"; // Trigger download directly via GET request
+}
+
+async function handleImportDb(event) {
+  const file = event.target.files[0];
+  if (!file) {
+    console.log("No file selected.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("database", file);
+
+  try {
+    const response = await fetch("/api/import_db", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (response.ok) {
+      alert(
+        translations[localStorage.getItem("language") || "ru"].importSuccess,
+      ); // Use localization
+      // перезагрузить страницу для применения изменений
+      window.location.reload();
+    } else {
+      const errorText = await response.text();
+      alert(
+        `${translations[localStorage.getItem("language") || "ru"].importError}: ${response.status} ${errorText}`,
+      ); // Use localization
+      console.error("Import failed:", response.status, errorText);
+    }
+  } catch (error) {
+    alert(
+      `${translations[localStorage.getItem("language") || "ru"].importError}: ${error}`,
+    ); // Use localization
+    console.error("Import error:", error);
+  } finally {
+    // Reset file input to allow re-importing the same file
+    importDbInput.value = "";
   }
 }

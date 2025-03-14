@@ -14,6 +14,15 @@ func GetDB() *gorm.DB {
 	return db
 }
 
+// OpenTestDB opens a database connection for testing purposes without replacing the global db instance.
+func OpenTestDB(dbFile string) (*gorm.DB, error) {
+	testDB, err := gorm.Open(sqlite.Open(dbFile+"?_journal_mode=WAL"), &gorm.Config{})
+	if err != nil {
+		return nil, err
+	}
+	return testDB, nil
+}
+
 func InitDB() {
 	dbFile := "tasks.db"
 	newDB := false
@@ -25,11 +34,12 @@ func InitDB() {
 	}
 
 	var err error
-	db, err = gorm.Open(sqlite.Open(dbFile+"?_journal_mode=WAL"), &gorm.Config{})
+	newGormDB, err := gorm.Open(sqlite.Open(dbFile+"?_journal_mode=WAL"), &gorm.Config{}) // Create a new gorm.DB instance
 	if err != nil {
 		slog.Error("failed to connect to database", "error", err)
 		panic(err)
 	}
+	db = newGormDB // Update the global db variable to the new connection
 
 	if newDB {
 		slog.Info("Running auto migration...")
@@ -66,7 +76,7 @@ func InitDB() {
 	} else {
 		// Add index for existing databases
 		err := db.Exec(`
-            CREATE INDEX IF NOT EXISTS idx_tasks_title_duedate 
+            CREATE INDEX IF NOT EXISTS idx_tasks_title_duedate
             ON tasks(title, due_date)
         `).Error
 		if err != nil {

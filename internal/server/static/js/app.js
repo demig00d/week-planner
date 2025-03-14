@@ -183,6 +183,24 @@ function setupEventListeners() {
       await checkAndRefreshTasks();
     }
   });
+
+  const exportDbBtn = document.getElementById("export-db-btn");
+  if (exportDbBtn) {
+    exportDbBtn.addEventListener("click", ui.handleExportDb);
+  } else {
+    console.error(
+      "Element with id 'export-db-btn' not found, export functionality will not work.",
+    );
+  }
+
+  const importDbInput = document.getElementById("import-db-input");
+  if (importDbInput) {
+    importDbInput.addEventListener("change", ui.handleImportDb);
+  } else {
+    console.error(
+      "Element with id 'import-db-input' not found, import functionality will not work.",
+    );
+  }
 }
 
 function handleMonthNameClick() {
@@ -209,6 +227,7 @@ function handleFullWeekdaysChange(event) {
   displayFullWeekdays = event.target.checked;
   localStorage.setItem("fullWeekdays", displayFullWeekdays);
   calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
+  ui.updateSettingsText();
 }
 
 async function handleWrapTaskTitlesChange(event) {

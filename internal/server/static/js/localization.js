@@ -48,6 +48,10 @@ export let translations = {
     tasksLeft: "tasks left",
     baseTitleName: "Week planner",
     noTodayTasks: "No tasks for today",
+    exportDatabase: "Export Database",
+    importDatabase: "Import Database",
+    importSuccess: "Database imported successfully!",
+    importError: "Import failed",
   },
   ru: {
     monthNames: [
@@ -98,6 +102,10 @@ export let translations = {
     tasksLeft: "задач(и) осталось",
     baseTitleName: "Планировщик недели",
     noTodayTasks: "Нет задач на сегодня",
+    exportDatabase: "Экспорт базы данных",
+    importDatabase: "Импорт базы данных",
+    importSuccess: "База данных успешно импортирована!",
+    importError: "Ошибка импорта",
   },
 };
 

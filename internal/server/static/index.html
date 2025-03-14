@@ -72,6 +72,28 @@
                   <input type="checkbox" id="wrap-task-titles-checkbox" />
                 </label>
               </div>
+              <div class="settings-options-header">Data</div>
+              <div class="settings-option">
+                <button
+                  id="export-db-btn"
+                  class="settings-button data-button"
+                  title="Export Database"
+                >
+                  <i class="fas fa-download"></i> Export Database
+                </button>
+              </div>
+              <div class="settings-option">
+                <label for="import-db-input" class="import-db-label">
+                  <i class="fas fa-upload"></i> Import Database
+                </label>
+                <input
+                  type="file"
+                  id="import-db-input"
+                  class="import-db-input"
+                  accept=".db"
+                  style="display: none"
+                />
+              </div>
             </div>
           </div>
         </div>

@@ -50,6 +50,10 @@ func SetupRouter() *mux.Router {
 	router.HandleFunc("/api/tasks/{id}", api.DeleteTaskHandler).Methods("DELETE", "OPTIONS")
 	router.HandleFunc("/api/search_tasks", api.SearchTasksHandler).Methods("GET", "OPTIONS")
 
+	// New routes for export and import
+	router.HandleFunc("/api/export_db", api.ExportDbHandler).Methods("GET", "OPTIONS")
+	router.HandleFunc("/api/import_db", api.ImportDbHandler).Methods("POST", "OPTIONS")
+
 	fsys, err := fs.Sub(staticFS, "static")
 	if err != nil {
 		panic(err)

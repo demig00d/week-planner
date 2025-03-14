@@ -2,7 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 	"week-planner/internal/config"
@@ -276,4 +279,110 @@ func SearchTasksHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(tasksToJSON(tasks))
+}
+
+// ExportDbHandler handles the export of the SQLite database file.
+func ExportDbHandler(w http.ResponseWriter, r *http.Request) {
+	dbPath := "tasks.db"
+
+	// Open the database file
+	dbFile, err := os.Open(dbPath)
+	if err != nil {
+		handleError(w, r, fmt.Errorf("exportDbHandler: could not open db file: %w", err))
+		return
+	}
+	defer dbFile.Close()
+
+	// Get file info to set headers
+	fileInfo, err := dbFile.Stat()
+	if err != nil {
+		handleError(w, r, fmt.Errorf("exportDbHandler: could not get file info: %w", err))
+		return
+	}
+
+	// Set headers for file download
+	w.Header().Set("Content-Disposition", "attachment; filename=tasks.db")
+	w.Header().Set("Content-Type", "application/octet-stream") // Generic binary file type
+	w.Header().Set("Content-Length", strconv.Itoa(int(fileInfo.Size())))
+
+	// Serve the file content
+	_, err = io.Copy(w, dbFile)
+	if err != nil {
+		handleError(w, r, fmt.Errorf("exportDbHandler: could not copy file to response: %w", err))
+	}
+}
+
+// ImportDbHandler handles the import of a new SQLite database file.
+func ImportDbHandler(w http.ResponseWriter, r *http.Request) {
+	// Parse multipart form, limit uploads to 10MB
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		handleError(w, r, db.NewAPIError(http.StatusBadRequest, fmt.Sprintf("importDbHandler: parse form failed: %v", err)))
+		return
+	}
+
+	// Get the file and file header from form data
+	file, header, err := r.FormFile("database")
+	if err != nil {
+		handleError(w, r, db.NewAPIError(http.StatusBadRequest, "importDbHandler: invalid file upload"))
+		return
+	}
+	defer file.Close()
+
+	// Basic file type check (can be improved with more robust validation if needed)
+	contentType := header.Header.Get("Content-Type")
+	if contentType != "application/octet-stream" && contentType != "application/x-sqlite3" { // Common content types for sqlite db
+		slog.Warn("importDbHandler: Content-Type is not application/octet-stream or application/x-sqlite3", "content_type", contentType)
+		// Proceed anyway, but log a warning. For stricter validation, return an error here.
+	}
+
+	tempDBPath := "temp_tasks.db" // Temporary file to store uploaded DB
+	tempFile, err := os.OpenFile(tempDBPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		handleError(w, r, fmt.Errorf("importDbHandler: could not create temp file: %w", err))
+		return
+	}
+	defer os.Remove(tempDBPath) // Clean up temp file
+	defer tempFile.Close()
+
+	// Copy uploaded file to temp file
+	_, err = io.Copy(tempFile, file)
+	if err != nil {
+		handleError(w, r, fmt.Errorf("importDbHandler: could not copy uploaded file to temp file: %w", err))
+		return
+	}
+
+	// Basic validation: Try to open the uploaded DB to see if it's a valid SQLite file
+	_, err = db.OpenTestDB(tempDBPath) // Using a test open function to avoid replacing the main DB directly yet
+	if err != nil {
+		handleError(w, r, db.NewAPIError(http.StatusBadRequest, "importDbHandler: invalid database file or corrupted database"))
+		return
+	}
+
+	// Replace the current database with the new one
+	oldDBPath := "tasks.db"
+	newDBPath := "tasks.db.new" // Temporary name during replacement
+
+	// Rename current DB to .old (backup)
+	err = os.Rename(oldDBPath, newDBPath)
+	if err != nil {
+		handleError(w, r, fmt.Errorf("importDbHandler: could not rename current db for backup: %w", err))
+		return
+	}
+	defer os.Remove(newDBPath) // Cleanup backup if rename fails later on
+
+	// Rename uploaded DB (temp file) to the actual DB path
+	err = os.Rename(tempDBPath, oldDBPath)
+	if err != nil {
+		// Try to restore from backup if rename fails
+		os.Rename(newDBPath, oldDBPath) // Attempt restore
+		handleError(w, r, fmt.Errorf("importDbHandler: could not rename temp db to main db: %w, database potentially corrupted, backup restored", err))
+		return
+	}
+
+	// Re-initialize the database connection - important to use the new DB
+	db.InitDB() // Re-initialize the DB connection
+
+	w.WriteHeader(http.StatusOK)                      // Respond with success
+	w.Write([]byte("Database imported successfully")) // Optional success message in body
 }

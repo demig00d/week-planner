@@ -1223,6 +1223,36 @@ body.dark-theme .task-details-popup-content .task-description-rendered a {
   margin-right: 0;
 }
 
-.highlighted-task {
-  border: 2px solid var(--highlight-text-color) !important;
+.settings-button.data-button {
+  justify-content: left;
+  width: 100%;
+  border: 1px solid var(--task-border-color);
+  margin-left: 0;
+}
+
+.settings-button.data-button i {
+  margin-right: 8px;
+}
+
+.import-db-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border: 1px solid var(--task-border-color);
+  justify-content: center; /* Center text and icon */
+}
+
+.import-db-label:hover,
+.settings-button.data-button:hover {
+  background-color: var(--inbox-bg-light);
+}
+
+body.dark-theme .import-db-label:hover {
+  background-color: var(--inbox-bg-dark);
+}
+
+body.dark-theme .settings-button.data-button:hover {
+  background-color: var(--inbox-bg-dark);
 }
