@@ -52,6 +52,7 @@ export let translations = {
     importDatabase: "Import Database",
     importSuccess: "Database imported successfully!",
     importError: "Import failed",
+    data: "Data",
   },
   ru: {
     monthNames: [
@@ -106,11 +107,12 @@ export let translations = {
     importDatabase: "Импорт базы данных",
     importSuccess: "База данных успешно импортирована!",
     importError: "Ошибка импорта",
+    data: "Данные",
   },
 };
 
 export function loadLanguage() {
-  const lang = localStorage.getItem("language") || "ru"; // Default to Russian
+  const lang = localStorage.getItem("language") || "ru";
   updateTranslations(lang);
   return lang;
 }
@@ -123,6 +125,7 @@ export async function updateTranslations(lang) {
   document.querySelector(
     '#settings-popup label[for="theme-select"]',
   ).textContent = translations[lang].theme;
+
   document.querySelector(
     '#settings-popup label[for="language-select-popup"]',
   ).textContent = translations[lang].language;
@@ -170,4 +173,14 @@ export async function updateTranslations(lang) {
   ).firstChild.textContent = translations[lang].description + ":";
   document.getElementById("date-picker-reset-date").innerText =
     translations[lang].datePickerSetDate;
+
+  document.querySelector("#export-db-btn span").textContent =
+    translations[lang].exportDatabase;
+
+  document.querySelector(".import-db-label span").textContent =
+    translations[lang].importDatabase;
+
+  document.querySelector(
+    ".settings-options-header[data-translate='data']",
+  ).textContent = translations[lang].data;
 }

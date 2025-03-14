@@ -39,7 +39,7 @@
         </div>
         <!-- Settings Popup -->
         <div id="settings-popup" class="settings-popup">
-          <h3>Settings</h3>
+          <h3 data-translate="settings">Settings</h3>
           <div class="settings-columns-container">
             <div class="settings-column">
               <div class="settings-option">
@@ -59,7 +59,9 @@
               </div>
             </div>
             <div class="settings-column">
-              <div class="settings-options-header">Display</div>
+              <div class="settings-options-header" data-translate="display">
+                Display
+              </div>
               <div class="settings-option display-checkbox">
                 <label for="full-weekdays-checkbox" class="styled-checkbox">
                   Full weekday names
@@ -72,19 +74,27 @@
                   <input type="checkbox" id="wrap-task-titles-checkbox" />
                 </label>
               </div>
-              <div class="settings-options-header">Data</div>
+              <div class="settings-options-header" data-translate="data">
+                Data
+              </div>
               <div class="settings-option">
                 <button
                   id="export-db-btn"
                   class="settings-button data-button"
-                  title="Export Database"
+                  data-translate="exportDatabase"
                 >
-                  <i class="fas fa-download"></i> Export Database
+                  <i class="fas fa-download"></i>
+                  <span data-translate="exportDatabase">Export Database</span>
                 </button>
               </div>
               <div class="settings-option">
-                <label for="import-db-input" class="import-db-label">
-                  <i class="fas fa-upload"></i> Import Database
+                <label
+                  for="import-db-input"
+                  class="import-db-label"
+                  data-translate="importDatabase"
+                >
+                  <i class="fas fa-upload"></i>
+                  <span data-translate="importDatabase">Import Database</span>
                 </label>
                 <input
                   type="file"

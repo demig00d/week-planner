@@ -1072,7 +1072,7 @@ async function handleImportDb(event) {
       alert(
         translations[localStorage.getItem("language") || "ru"].importSuccess,
       ); // Use localization
-      // перезагрузить страницу для применения изменений
+      // Reload the page to apply the changes.
       window.location.reload();
     } else {
       const errorText = await response.text();
