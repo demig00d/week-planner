@@ -410,13 +410,20 @@ export function adjustTextareaHeight() {
 }
 
 export function updateMarkAsDoneButton(isCompleted) {
+  const markDoneTaskDetailsBtn = document.getElementById(
+    "mark-done-task-details",
+  );
+  if (!markDoneTaskDetailsBtn) return; // Add check if button exists
+
   if (isCompleted) {
     markDoneTaskDetailsBtn.dataset.completed = 1;
     markDoneTaskDetailsBtn.innerHTML = '<i class="fas fa-check-circle"></i>';
-    markDoneTaskDetailsBtn.title = "Mark as undone";
+    markDoneTaskDetailsBtn.title =
+      translations[localStorage.getItem("language") || "ru"].markAsUndone;
   } else {
     markDoneTaskDetailsBtn.innerHTML = '<i class="far fa-check-circle"></i>';
-    markDoneTaskDetailsBtn.title = "Mark as done";
+    markDoneTaskDetailsBtn.title =
+      translations[localStorage.getItem("language") || "ru"].markAsDone;
     markDoneTaskDetailsBtn.dataset.completed = 0;
   }
 }

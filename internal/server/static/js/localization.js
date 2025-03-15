@@ -53,6 +53,26 @@ export let translations = {
     importSuccess: "Database imported successfully!",
     importError: "Import failed",
     data: "Data",
+    searchTasks: "Search Tasks",
+    settingsTitle: "Settings",
+    previousWeek: "Previous Week",
+    nextWeek: "Next Week",
+    toggleDescriptionMode: "Toggle Description Mode",
+    markAsDone: "Mark as done",
+    recurringTask: "Recurring task",
+    reminderSet: "Reminder set",
+    resetColor: "Reset Color",
+    pickADate: "Pick a date",
+    deleteTaskTitle: "Delete Task",
+    closePopup: "Close",
+    exportDatabaseTitle: "Export Database",
+    importDatabaseTitle: "Import Database",
+    colorBlue: "Blue",
+    colorGreen: "Green",
+    colorYellow: "Yellow",
+    colorPink: "Pink",
+    colorOrange: "Orange",
+    markAsUndone: "Mark as undone",
   },
   ru: {
     monthNames: [
@@ -108,6 +128,26 @@ export let translations = {
     importSuccess: "База данных успешно импортирована!",
     importError: "Ошибка импорта",
     data: "Данные",
+    searchTasks: "Поиск задач",
+    settingsTitle: "Настройки",
+    previousWeek: "Предыдущая неделя",
+    nextWeek: "Следующая неделя",
+    toggleDescriptionMode: "Переключить режим описания",
+    markAsDone: "Отметить как сделанное",
+    recurringTask: "Повторяющаяся задача",
+    reminderSet: "Напоминание установлено",
+    resetColor: "Сбросить цвет",
+    pickADate: "Выбрать дату",
+    deleteTaskTitle: "Удалить задачу",
+    closePopup: "Закрыть",
+    exportDatabaseTitle: "Экспорт базы данных",
+    importDatabaseTitle: "Импорт базы данных",
+    colorBlue: "Синий",
+    colorGreen: "Зеленый",
+    colorYellow: "Желтый",
+    colorPink: "Розовый",
+    colorOrange: "Оранжевый",
+    markAsUndone: "Отметить как не сделанное",
   },
 };
 
@@ -117,34 +157,83 @@ export function loadLanguage() {
   return lang;
 }
 export async function updateTranslations(lang) {
-  document.getElementById("fuzzy-search-input").placeholder =
-    translations[lang].searchPlaceholder;
-  document.querySelector("#settings-popup h3").textContent =
-    translations[lang].settings;
+  let element_fuzzy_search_input =
+    document.getElementById("fuzzy-search-input");
+  if (element_fuzzy_search_input) {
+    element_fuzzy_search_input.placeholder =
+      translations[lang].searchPlaceholder;
+  }
 
-  document.querySelector(
+  let element_settings_popup_h3 = document.querySelector("#settings-popup h3");
+  if (element_settings_popup_h3) {
+    element_settings_popup_h3.textContent = translations[lang].settings;
+    element_settings_popup_h3.title = translations[lang].settingsTitle;
+  }
+
+  let element_settings_btn = document.getElementById("settings-btn");
+  if (element_settings_btn) {
+    element_settings_btn.title = translations[lang].settingsTitle;
+  }
+
+  let element_search_btn = document.getElementById("search-btn");
+  if (element_search_btn) {
+    element_search_btn.title = translations[lang].searchTasks;
+  }
+
+  let element_prev_week_btn = document.getElementById("prev-week");
+  if (element_prev_week_btn) {
+    element_prev_week_btn.title = translations[lang].previousWeek;
+  }
+
+  let element_next_week_btn = document.getElementById("next-week");
+  if (element_next_week_btn) {
+    element_next_week_btn.title = translations[lang].nextWeek;
+  }
+
+  let element_settings_popup_label_theme = document.querySelector(
     '#settings-popup label[for="theme-select"]',
-  ).textContent = translations[lang].theme;
+  );
+  if (element_settings_popup_label_theme) {
+    element_settings_popup_label_theme.textContent = translations[lang].theme;
+  }
 
-  document.querySelector(
+  let element_settings_popup_label_language = document.querySelector(
     '#settings-popup label[for="language-select-popup"]',
-  ).textContent = translations[lang].language;
+  );
+  if (element_settings_popup_label_language) {
+    element_settings_popup_label_language.textContent =
+      translations[lang].language;
+  }
 
-  document
+  let element_theme_select_auto_option = document
     .getElementById("theme-select")
-    .querySelector('option[value="auto"]').textContent =
-    translations[lang].themeAuto;
-  document
+    .querySelector('option[value="auto"]');
+  if (element_theme_select_auto_option) {
+    element_theme_select_auto_option.textContent = translations[lang].themeAuto;
+  }
+  let element_theme_select_light_option = document
     .getElementById("theme-select")
-    .querySelector('option[value="light"]').textContent =
-    translations[lang].themeLight;
-  document
+    .querySelector('option[value="light"]');
+  if (element_theme_select_light_option) {
+    element_theme_select_light_option.textContent =
+      translations[lang].themeLight;
+  }
+  let element_theme_select_dark_option = document
     .getElementById("theme-select")
-    .querySelector('option[value="dark"]').textContent =
-    translations[lang].themeDark;
+    .querySelector('option[value="dark"]');
+  if (element_theme_select_dark_option) {
+    element_theme_select_dark_option.textContent = translations[lang].themeDark;
+  }
 
-  document.querySelector(".settings-options-header").textContent =
-    translations[lang].displayOptionsHeader;
+  let element_settings_options_header = document.querySelector(
+    ".settings-options-header",
+  );
+  if (element_settings_options_header) {
+    element_settings_options_header.textContent =
+      translations[lang].displayOptionsHeader;
+    element_settings_options_header.title =
+      translations[lang].displayOptionsHeader;
+  }
 
   const fullWeekdaysCheckbox = document.getElementById(
     "full-weekdays-checkbox",
@@ -155,6 +244,7 @@ export async function updateTranslations(lang) {
     label.innerHTML = ""; // Clear existing content
     label.appendChild(document.createTextNode(newText));
     label.appendChild(fullWeekdaysCheckbox);
+    label.title = translations[lang].fullWeekdaysHeader;
   }
 
   const wrapTaskTitlesCheckbox = document.getElementById(
@@ -166,21 +256,136 @@ export async function updateTranslations(lang) {
     label.innerHTML = "";
     label.appendChild(document.createTextNode(newText));
     label.appendChild(wrapTaskTitlesCheckbox);
+    label.title = translations[lang].wrapWeekTitlesHeader;
   }
 
-  document.querySelector(
+  let element_task_details_date = document.getElementById("task-details-date");
+  if (element_task_details_date) {
+    element_task_details_date.title = translations[lang].pickADate;
+  }
+
+  let element_toggle_description_mode_btn = document.getElementById(
+    "toggle-description-mode-btn",
+  );
+  if (element_toggle_description_mode_btn) {
+    element_toggle_description_mode_btn.title =
+      translations[lang].toggleDescriptionMode;
+  }
+
+  let element_mark_done_task_details = document.getElementById(
+    "mark-done-task-details",
+  );
+  if (element_mark_done_task_details) {
+    // Dynamic tooltip based on data-completed attribute
+    if (element_mark_done_task_details.dataset.completed === "1") {
+      element_mark_done_task_details.title = translations[lang].markAsUndone;
+    } else {
+      element_mark_done_task_details.title = translations[lang].markAsDone;
+    }
+  }
+
+  let element_recurring_task_details = document.getElementById(
+    "recurring-task-details",
+  );
+  if (element_recurring_task_details) {
+    element_recurring_task_details.title = translations[lang].recurringTask;
+  }
+
+  let element_reminder_task_details = document.getElementById(
+    "reminder-task-details",
+  );
+  if (element_reminder_task_details) {
+    element_reminder_task_details.title = translations[lang].reminderSet;
+  }
+
+  let element_delete_task_details = document.getElementById(
+    "delete-task-details",
+  );
+  if (element_delete_task_details) {
+    element_delete_task_details.title = translations[lang].deleteTaskTitle;
+  }
+
+  let element_close_task_details_popup = document.getElementById(
+    "close-task-details-popup",
+  );
+  if (element_close_task_details_popup) {
+    element_close_task_details_popup.title = translations[lang].closePopup;
+  }
+
+  let element_color_swatch_no_color = document.querySelector(
+    ".color-swatch.selected-color[data-color='no-color']",
+  );
+  if (element_color_swatch_no_color) {
+    element_color_swatch_no_color.title = translations[lang].resetColor;
+  }
+
+  let element_color_swatch_blue = document.querySelector(
+    ".color-swatch.blue-swatch",
+  );
+  if (element_color_swatch_blue) {
+    element_color_swatch_blue.title = translations[lang].colorBlue;
+  }
+
+  let element_color_swatch_green = document.querySelector(
+    ".color-swatch.green-swatch",
+  );
+  if (element_color_swatch_green) {
+    element_color_swatch_green.title = translations[lang].colorGreen;
+  }
+
+  let element_color_swatch_yellow = document.querySelector(
+    ".color-swatch.yellow-swatch",
+  );
+  if (element_color_swatch_yellow) {
+    element_color_swatch_yellow.title = translations[lang].colorYellow;
+  }
+
+  let element_color_swatch_pink = document.querySelector(
+    ".color-swatch.pink-swatch",
+  );
+  if (element_color_swatch_pink) {
+    element_color_swatch_pink.title = translations[lang].colorPink;
+  }
+
+  let element_color_swatch_orange = document.querySelector(
+    ".color-swatch.orange-swatch",
+  );
+  if (element_color_swatch_orange) {
+    element_color_swatch_orange.title = translations[lang].colorOrange;
+  }
+
+  let element_task_details_popup_description_label = document.querySelector(
     '#task-details-popup .task-details-popup-content label[for="task-description-textarea"]',
-  ).firstChild.textContent = translations[lang].description + ":";
-  document.getElementById("date-picker-reset-date").innerText =
-    translations[lang].datePickerSetDate;
+  );
+  if (element_task_details_popup_description_label) {
+    element_task_details_popup_description_label.firstChild.textContent =
+      translations[lang].description + ":";
+  }
 
-  document.querySelector("#export-db-btn span").textContent =
-    translations[lang].exportDatabase;
+  let element_date_picker_reset_date = document.getElementById(
+    "date-picker-reset-date",
+  );
+  if (element_date_picker_reset_date) {
+    element_date_picker_reset_date.innerText =
+      translations[lang].datePickerSetDate;
+    element_date_picker_reset_date.title = translations[lang].datePickerSetDate;
+  }
 
-  document.querySelector(".import-db-label span").textContent =
-    translations[lang].importDatabase;
+  let element_export_db_btn = document.getElementById("export-db-btn");
+  if (element_export_db_btn) {
+    element_export_db_btn.title = translations[lang].exportDatabaseTitle;
+  }
 
-  document.querySelector(
+  let element_import_db_label = document.querySelector(".import-db-label");
+  if (element_import_db_label) {
+    element_import_db_label.title = translations[lang].importDatabaseTitle;
+  }
+
+  let element_settings_options_header_data = document.querySelector(
     ".settings-options-header[data-translate='data']",
-  ).textContent = translations[lang].data;
+  );
+  if (element_settings_options_header_data) {
+    element_settings_options_header_data.textContent = translations[lang].data;
+    element_settings_options_header_data.title = translations[lang].data;
+  }
 }

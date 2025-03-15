@@ -108,7 +108,6 @@ body.dark-theme {
 }
 
 .task-details-popup h2,
-.settings-popup h3,
 .date-picker-header {
   border-bottom: 1px solid var(--task-border-color) !important;
 }
@@ -474,10 +473,53 @@ body.dark-theme .event[data-task-color="orange"] {
   padding: 20px;
 }
 
-.settings-popup h3 {
-  margin-top: 0;
+.settings-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 15px;
   padding-bottom: 10px;
+  border-bottom: 1px solid var(--task-border-color) !important;
+}
+
+.settings-popup-header h3 {
+  margin: 0;
+  padding: 0;
+}
+
+.settings-data-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.settings-data-actions button.data-button,
+.settings-data-actions label.import-db-label {
+  border: none;
+  padding: 8px;
+  margin: 0;
+  border-radius: 4px;
+  background-color: transparent;
+  color: var(--text-color);
+  cursor: pointer;
+  font-size: 1em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-data-actions button.data-button:hover,
+.settings-data-actions label.import-db-label:hover {
+  background-color: var(--inbox-bg-light);
+}
+
+body.dark-theme .settings-data-actions button.data-button:hover,
+body.dark-theme .settings-data-actions label.import-db-label:hover {
+  background-color: var(--inbox-bg-dark);
+}
+
+.settings-data-actions button.data-button i,
+.settings-data-actions label.import-db-label i {
+  margin-right: 0;
 }
 
 .settings-columns-container {
@@ -657,7 +699,6 @@ body.dark-theme .event[data-task-color="orange"] {
 .task-details-popup h2 {
   margin-top: 0;
   margin-bottom: 20px;
-  border-bottom: none;
   padding-bottom: 0;
   text-align: center;
   flex-shrink: 0;
