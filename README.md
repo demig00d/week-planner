@@ -2,7 +2,7 @@
 
 Simple, time-free planner with week view & to-do list. It's a single executable application with portable tasks stored locally in a `tasks.db` file (SQLite), available for download [here](https://github.com/demig00d/week-planner/releases).
 
-![Themes|width=300](images/usage-demo.gif)
+<img src="https://github.com/demig00d/week-planner/blob/master/images/usage-demo.gif?raw=true" width=55% height=55%>
 
 ## Key Features
 
