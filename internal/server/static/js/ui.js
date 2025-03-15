@@ -200,6 +200,14 @@ export function getTaskBackgroundColor(color) {
 export async function updateSettingsText() {
   const lang = localStorage.getItem("language") || "ru";
   await updateTranslations(lang);
+  updateSettingsLanguageSelector(lang);
+}
+
+export function updateSettingsLanguageSelector(currentLang) {
+  const languageSelectPopup = document.getElementById("language-select-popup");
+  if (languageSelectPopup) {
+    languageSelectPopup.value = currentLang;
+  }
 }
 
 export async function openTaskDetails(taskId) {

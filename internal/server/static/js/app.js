@@ -48,7 +48,8 @@ async function checkAndRefreshTasks() {
 
 // Initialization function
 async function initialize() {
-  loadLanguage();
+  await loadLanguage();
+  ui.updateSettingsLanguageSelector(localStorage.getItem("language") || "ru");
   ui.setTheme(currentTheme);
   calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
   calendar.renderInbox();
