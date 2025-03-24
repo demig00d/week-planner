@@ -430,6 +430,19 @@ body.dark-theme .event[data-task-color="orange"] {
 .undone-button i {
   color: grey;
 }
+.link-button {
+  background: none;
+  border: none;
+  font-size: 1em;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  color: var(--text-color);
+  transition: opacity 0.2s ease-in-out;
+}
+.link-button i {
+  color: var(--task-popup-icons-color);
+}
 
 .new-task-form {
   margin-top: 5px;
@@ -674,11 +687,10 @@ body.dark-theme .settings-data-actions label.import-db-label:hover {
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
   z-index: 1000;
   display: none;
+  justify-content: center;
+  align-items: flex-start;
   padding-top: 170px;
   overflow-y: auto;
 }
@@ -715,7 +727,8 @@ body.dark-theme .settings-data-actions label.import-db-label:hover {
 .task-actions-group-left,
 .task-actions-group-center,
 .task-actions-group-done-button,
-.task-actions-group-right {
+.task-actions-group-right,
+.task-actions-group-link-button {
   display: flex;
   align-items: center;
 }
@@ -728,12 +741,19 @@ body.dark-theme .settings-data-actions label.import-db-label:hover {
 }
 
 .task-actions-group-center {
-  margin-left: 20px;
-  margin-right: 20px;
+  margin-left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .task-actions-group-done-button {
-  margin-right: 10px;
+  margin-right: 0;
+}
+
+.task-actions-group-link-button {
+  margin-right: 0;
+  position: relative;
 }
 
 .task-details-date {
@@ -950,6 +970,7 @@ body.dark-theme .color-swatch.orange-swatch {
   border: 1px solid var(--input-focus-border);
   outline: 1px solid var(--highlight-text-color);
   box-shadow: 0 0 0 2px var(--bg-color);
+  pointer-events: none;
 }
 
 .color-swatch:focus {
@@ -1367,7 +1388,7 @@ body.dark-theme .task-details-popup-content .task-description-rendered a {
   cursor: pointer;
   font-size: 1em;
   opacity: 1 !important;
-  margin-right: 10px;
+  margin-right: 0;
   white-space: nowrap;
   transition:
     background-color 0.2s ease-in-out,
@@ -1417,4 +1438,17 @@ body.dark-theme .import-db-label:hover {
 
 body.dark-theme .settings-button.data-button:hover {
   background-color: var(--inbox-bg-dark);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.link-button.spinning i {
+  animation: spin 1s linear infinite;
 }

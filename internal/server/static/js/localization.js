@@ -1,4 +1,4 @@
-export let translations = {
+export const translations = {
   en: {
     monthNames: [
       "January",
@@ -73,6 +73,9 @@ export let translations = {
     colorPink: "Pink",
     colorOrange: "Orange",
     markAsUndone: "Mark as undone",
+    taskLinkCopied: "Task link copied",
+    taskLinkCopyFailed: "Failed to copy task link",
+    copyTaskLink: "Copy Task Link",
   },
   ru: {
     monthNames: [
@@ -148,6 +151,9 @@ export let translations = {
     colorPink: "Розовый",
     colorOrange: "Оранжевый",
     markAsUndone: "Отметить как не сделанное",
+    taskLinkCopied: "Ссылка на задачу скопирована",
+    taskLinkCopyFailed: "Не удалось скопировать ссылку на задачу",
+    copyTaskLink: "Копировать ссылку на задачу",
   },
 };
 
@@ -381,11 +387,14 @@ export async function updateTranslations(lang) {
     element_import_db_label.title = translations[lang].importDatabaseTitle;
   }
 
-  let element_settings_options_header_data = document.querySelector(
-    ".settings-options-header[data-translate='data']",
-  );
-  if (element_settings_options_header_data) {
-    element_settings_options_header_data.textContent = translations[lang].data;
-    element_settings_options_header_data.title = translations[lang].data;
+  let element_copy_task_link_btn =
+    document.getElementById("copy-task-link-btn");
+  if (element_copy_task_link_btn) {
+    element_copy_task_link_btn.title = translations[lang].copyTaskLink;
   }
+}
+
+export function setLanguage(lang) {
+  localStorage.setItem("language", lang);
+  updateTranslations(lang);
 }

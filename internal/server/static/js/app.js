@@ -51,11 +51,11 @@ async function initialize() {
   await loadLanguage();
   ui.updateSettingsLanguageSelector(localStorage.getItem("language") || "ru");
   ui.setTheme(currentTheme);
-  calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
-  calendar.renderInbox();
+  await calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
+  await calendar.renderInbox();
   ui.updateSettingsText();
   setupEventListeners();
-  // Set initial checkbox states based on localStorage
+  // Set initial checkbox states based on localStorage - keep this *before* initial task link handling
   document.getElementById("full-weekdays-checkbox").checked =
     displayFullWeekdays;
   document.getElementById("wrap-task-titles-checkbox").checked = wrapTaskTitles;
@@ -63,6 +63,12 @@ async function initialize() {
   ui.handleCheckboxChange(document.getElementById("wrap-task-titles-checkbox"));
   ui.updateTabTitle();
   await checkAndRefreshTasks(); // Initial check on load
+
+  // Handle initial task link on page load, but only once and AFTER initialization is complete
+  if (!initialTaskLinkHandled) {
+    initialTaskLinkHandled = true;
+    handleInitialTaskLink();
+  }
 
   if (currentTheme === "auto") {
     window
@@ -72,13 +78,15 @@ async function initialize() {
       });
   }
 }
-//Corrected setupEventListeners
+
+let initialTaskLinkHandled = false; // Flag to prevent handling link multiple times on init
+// Corrected setupEventListeners
 function setupEventListeners() {
   prevWeekButton.addEventListener("click", async () => {
     setDisplayedWeekStartDate(
       utils.addDays(getDisplayedWeekStartDateInternal(), -7),
     ); // Use setter here
-    await calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal()); //Await render
+    await calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
     await checkAndRefreshTasks(); // Check date after navigation
   });
 
@@ -86,7 +94,7 @@ function setupEventListeners() {
     setDisplayedWeekStartDate(
       utils.addDays(getDisplayedWeekStartDateInternal(), 7),
     ); // Use setter here
-    await calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal()); //Await render
+    await calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
     await checkAndRefreshTasks(); // Check date after navigation
   });
 
@@ -97,6 +105,7 @@ function setupEventListeners() {
 
   document.addEventListener("keydown", handleGlobalKeydown);
   window.addEventListener("click", handleGlobalClick);
+  window.addEventListener("hashchange", handleHashChange);
 
   document
     .getElementById("theme-select")
@@ -202,6 +211,45 @@ function setupEventListeners() {
       "Element with id 'import-db-input' not found, import functionality will not work.",
     );
   }
+}
+
+async function handleInitialTaskLink() {
+  const hash = window.location.hash;
+  if (hash.startsWith("#task/")) {
+    const taskId = hash.substring(6); // Extract taskId from #task/{taskId}
+    try {
+      const taskDetails = await api.fetchTaskDetails(taskId);
+      if (taskDetails) {
+        ui.closeAllPopups();
+        if (taskDetails.due_date) {
+          setDisplayedWeekStartDate(
+            utils.getStartOfWeek(new Date(taskDetails.due_date)),
+          );
+          calendar.renderWeekCalendar(
+            utils.getStartOfWeek(new Date(taskDetails.due_date)),
+          );
+        } else {
+          document
+            .getElementById("inbox")
+            .scrollIntoView({ behavior: "smooth" });
+        }
+        ui.highlightTask(taskId);
+
+        // Clear the hash from the URL after handling the link
+        history.pushState(
+          "",
+          document.title,
+          window.location.pathname + window.location.search,
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching task details from link:", error);
+    }
+  }
+}
+
+function handleHashChange() {
+  handleInitialTaskLink();
 }
 
 function handleMonthNameClick() {

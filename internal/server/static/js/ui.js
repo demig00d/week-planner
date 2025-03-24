@@ -311,49 +311,24 @@ export async function openTaskDetails(taskId) {
       swatchToSelect.classList.add("selected-color");
     }
 
-    colorSwatches.forEach((swatch) => {
-      swatch.onclick = async (event) => {
-        let color = swatch.dataset.color;
-        if (color === "no-color" || color === undefined) {
-          color = "";
-        }
+    // Setup Copy Link Button
+    const copyTaskLinkBtn = document.getElementById("copy-task-link-btn");
 
-        const currentTaskDetails = await api.fetchTaskDetails(
-          currentTaskBeingViewed,
-        );
-        if (currentTaskDetails && currentTaskDetails.color === color) {
-          colorSwatches.forEach((sw) => sw.classList.remove("selected-color"));
-          swatch.classList.add("selected-color");
-          const taskElement = document.querySelector(
-            `.event[data-task-id="${currentTaskBeingViewed}"]`,
-          );
-          if (taskElement) {
-            taskElement.dataset.taskColor = color;
-            taskElement.style.backgroundColor = getTaskBackgroundColor(color);
-          }
-          return;
-        }
-
-        if (currentTaskBeingViewed) {
-          await api.updateTask(currentTaskBeingViewed, { color: color });
-          const taskElement = document.querySelector(
-            `.event[data-task-id="${currentTaskBeingViewed}"]`,
-          );
-          if (taskElement) {
-            taskElement.dataset.taskColor = color;
-            taskElement.style.backgroundColor = getTaskBackgroundColor(color);
-          }
-        }
-
-        colorSwatches.forEach((sw) => {
-          if (sw === swatch) {
-            sw.classList.add("selected-color");
-          } else {
-            sw.classList.remove("selected-color");
-          }
+    copyTaskLinkBtn.onclick = () => {
+      const taskLink = `${window.location.origin}/#task/${taskId}`;
+      navigator.clipboard
+        .writeText(taskLink)
+        .then(() => {
+          // Success feedback (Spinning Icon)
+          copyTaskLinkBtn.classList.add("spinning");
+          setTimeout(() => {
+            copyTaskLinkBtn.classList.remove("spinning"); // Remove spinning class after 1 second
+          }, 1000); // Animation duration is 1 second, so remove class after 1 second
+        })
+        .catch((err) => {
+          console.error("Failed to copy task link: ", err);
         });
-      };
-    });
+    };
 
     updateMarkAsDoneButton(isCompleted);
   } catch (error) {
@@ -697,7 +672,7 @@ async function displayFuzzySearchResults(query, page, pageSize) {
   }
 }
 
-function highlightTask(taskId) {
+export function highlightTask(taskId) {
   setTimeout(() => {
     const taskElement = document.querySelector(
       `.event[data-task-id="${taskId}"]`,
@@ -909,10 +884,7 @@ export function handleCheckboxChange(checkbox) {
 
 export function setLanguage(lang) {
   localStorage.setItem("language", lang);
-  calendar.renderWeekCalendar(utils.getStartOfWeek(new Date()));
-  updateSettingsText();
-  renderDatePicker();
-  calendar.renderInbox();
+  updateTranslations(lang);
 }
 
 export async function updateTabTitle() {
