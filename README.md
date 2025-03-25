@@ -13,7 +13,7 @@ Simple, time-free planner with week view & to-do list. It's a single executable 
   - [x] Supports Markdown formatting
   - [x] Displays the number of subtasks
 - [x] Fuzzy search capability
-- [ ] Recurring tasks
+- [x] Recurring tasks
 - [ ] Notifications
 
 **Visual & User-Friendly:**
