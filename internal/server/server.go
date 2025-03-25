@@ -54,6 +54,9 @@ func SetupRouter() *mux.Router {
 	router.HandleFunc("/api/export_db", api.ExportDbHandler).Methods("GET", "OPTIONS")
 	router.HandleFunc("/api/import_db", api.ImportDbHandler).Methods("POST", "OPTIONS")
 
+	// --- ADDED: Endpoint for checking recurring tasks ---
+	router.HandleFunc("/api/check_recurring_tasks", api.CheckRecurringTasksHandler).Methods("POST", "OPTIONS") // Or GET
+
 	fsys, err := fs.Sub(staticFS, "static")
 	if err != nil {
 		panic(err)

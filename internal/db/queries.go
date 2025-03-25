@@ -109,7 +109,7 @@ func UpdateTask(id int, updates map[string]interface{}) error {
 		return NewAPIError(400, "No fields to update")
 	}
 
-	// Validate fields
+	// Validate fields.  Make sure this list is exhaustive!
 	for key, value := range updates {
 		switch key {
 		case "title":
@@ -135,7 +135,7 @@ func UpdateTask(id int, updates map[string]interface{}) error {
 			}
 		case "completed":
 			if _, ok := value.(bool); !ok && value != nil {
-				if _, ok := value.(float64); !ok {
+				if _, ok := value.(float64); !ok { // JSON numbers are float64
 					return NewAPIError(400, "Invalid completed status")
 				}
 			}
@@ -144,9 +144,14 @@ func UpdateTask(id int, updates map[string]interface{}) error {
 				return NewAPIError(400, "Invalid color")
 			}
 		case "task_order":
-			if _, ok := value.(float64); !ok {
+			if _, ok := value.(float64); !ok { // Order will be a number (float64 from JSON)
 				return NewAPIError(400, "Invalid task order")
 			}
+		case "recurrence_rule":
+			if rule, ok := value.(string); !ok || (rule != "" && rule != "daily" && rule != "weekly") {
+				return NewAPIError(400, "Invalid recurrence_rule value")
+			}
+
 		default:
 			return NewAPIError(400, fmt.Sprintf("Unknown field: %s", key))
 		}
@@ -189,9 +194,6 @@ func DeleteTask(id int) error {
 }
 
 // SearchTasks performs a fuzzy search for tasks using FTS5.
-// It constructs a query that uses a LIKE pattern for exact matches
-// and an FTS5 MATCH expression for fuzzy searching.
-// The escapeFTS5Query function is used to properly escape and/or quote the user input.
 func SearchTasks(query string, limit int, offset int) (Tasks, error) {
 	var tasks Tasks
 	queryString := `
@@ -210,24 +212,21 @@ func SearchTasks(query string, limit int, offset int) (Tasks, error) {
                  tasks.due_date DESC
         LIMIT ? OFFSET ?`
 
-	// Escape special characters for the FTS5 query.
 	escapedQuery, quoted := escapeFTS5Query(query)
 	var fts5MatchQuery string
 	if !quoted {
-		// If the query is a bareword, append the prefix wildcard.
 		fts5MatchQuery = escapedQuery + "*"
 	} else {
-		// If the query was quoted, use it literally.
 		fts5MatchQuery = escapedQuery
 	}
 
-	// For the LIKE clause, simply use the original query with a trailing '%'.
 	exactQuery := query + "%"
 
 	args := []interface{}{
 		exactQuery,
 		fts5MatchQuery,
-		limit, offset,
+		limit,
+		offset,
 	}
 
 	slog.Debug("Searching tasks with query", "query", query, "limit", limit, "offset", offset)
@@ -239,10 +238,6 @@ func SearchTasks(query string, limit int, offset int) (Tasks, error) {
 }
 
 // escapeFTS5Query escapes special characters in a query for use with SQLite FTS5.
-// It doubles embedded double quotes and, for ASCII characters, allows only letters,
-// digits, and underscore. If any disallowed ASCII character is found, the function
-// wraps the entire query in double quotes and returns a flag indicating it was quoted.
-// Non-ASCII characters are allowed as bareword characters.
 func escapeFTS5Query(query string) (string, bool) {
 	escaped := strings.ReplaceAll(query, `"`, `""`)
 	isBareword := true
@@ -253,7 +248,6 @@ func escapeFTS5Query(query string) (string, bool) {
 				break
 			}
 		}
-		// Non-ASCII characters are allowed.
 	}
 	if isBareword {
 		return escaped, false
@@ -261,7 +255,7 @@ func escapeFTS5Query(query string) (string, bool) {
 	return `"` + escaped + `"`, true
 }
 
-// NullTime is a nullable time type used for JSON marshalling/unmarshalling.
+// NullTime is a nullable time type.
 func (nt *NullTime) MarshalJSON() ([]byte, error) {
 	if !nt.Valid {
 		return []byte("null"), nil
@@ -305,4 +299,60 @@ func (nt *NullTime) Scan(value interface{}) error {
 	}
 	nt.Time, nt.Valid = t, true
 	return nil
+}
+
+// CreateNextOccurrencesForUndoneRecurringTasks creates new occurrences for undone recurring tasks.
+func CreateNextOccurrencesForUndoneRecurringTasks() error {
+	today := time.Now().Truncate(24 * time.Hour) // Get start of today
+
+	return GetDB().Transaction(func(tx *gorm.DB) error {
+		var tasks []Task
+		// Find recurring tasks that were due before today and are NOT completed.
+		result := tx.Where("recurrence_rule != '' AND due_date < ? AND completed = ?", today, 0).Find(&tasks)
+		if result.Error != nil {
+			return fmt.Errorf("failed to find undone recurring tasks: %w", result.Error)
+		}
+
+		slog.Debug("Found undone recurring tasks", "count", len(tasks))
+
+		for _, task := range tasks {
+			if !task.DueDate.Valid {
+				slog.Warn("Recurring task without a due date found", "task_id", task.ID)
+				continue // Skip tasks without a due date
+			}
+
+			nextDueDate := task.DueDate.Time // Start with original due date
+			// Keep incrementing until we get a future due date
+			for nextDueDate.Before(today) || nextDueDate.Equal(today) {
+				switch task.RecurrenceRule {
+				case "daily":
+					nextDueDate = nextDueDate.AddDate(0, 0, 1)
+				case "weekly":
+					nextDueDate = nextDueDate.AddDate(0, 0, 7)
+				default:
+					slog.Warn("Unsupported recurrence rule", "rule", task.RecurrenceRule, "task_id", task.ID)
+					continue // Skip unsupported rules
+				}
+			}
+
+			slog.Debug("Creating new occurrence", "original_task_id", task.ID, "next_due_date", nextDueDate)
+
+			// Create the new task occurrence
+			newTask := Task{
+				Title:          task.Title,
+				Description:    task.Description,
+				Color:          task.Color,
+				RecurrenceRule: task.RecurrenceRule,
+				DueDate:        NullTime{Time: nextDueDate, Valid: true},
+				Completed:      0,
+				TaskOrder:      0,
+			}
+
+			if err := tx.Create(&newTask).Error; err != nil {
+				return fmt.Errorf("failed to create next occurrence for task ID %d: %w", task.ID, err)
+			}
+			slog.Info("Created next occurrence for undone recurring task", "original_task_id", task.ID, "new_task_id", newTask.ID, "new_due_date", newTask.DueDate.Time.Format(config.DateFormat))
+		}
+		return nil
+	})
 }

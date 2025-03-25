@@ -76,6 +76,12 @@ export const translations = {
     taskLinkCopied: "Task link copied",
     taskLinkCopyFailed: "Failed to copy task link",
     copyTaskLink: "Copy Task Link",
+    recurrence: "Recurrence",
+    recurrenceNone: "None",
+    recurrenceDaily: "Daily",
+    recurrenceWeekly: "Weekly",
+    recurrenceMonthly: "Monthly",
+    recurrenceYearly: "Yearly",
   },
   ru: {
     monthNames: [
@@ -154,6 +160,12 @@ export const translations = {
     taskLinkCopied: "Ссылка на задачу скопирована",
     taskLinkCopyFailed: "Не удалось скопировать ссылку на задачу",
     copyTaskLink: "Копировать ссылку на задачу",
+    recurrence: "Повторение",
+    recurrenceNone: "Нет",
+    recurrenceDaily: "Ежедневно",
+    recurrenceWeekly: "Еженедельно",
+    recurrenceMonthly: "Ежемесячно",
+    recurrenceYearly: "Ежегодно",
   },
 };
 
@@ -391,6 +403,43 @@ export async function updateTranslations(lang) {
     document.getElementById("copy-task-link-btn");
   if (element_copy_task_link_btn) {
     element_copy_task_link_btn.title = translations[lang].copyTaskLink;
+  }
+
+  let recurrenceLabel = document.querySelector(
+    '#recurrence-rule-container label[for="recurrence-rule-select"]',
+  );
+  if (recurrenceLabel) {
+    recurrenceLabel.textContent = translations[lang].recurrence;
+  }
+  let recurrenceNoneOption = document.querySelector(
+    '#recurrence-rule-select option[value=""]',
+  );
+  if (recurrenceNoneOption) {
+    recurrenceNoneOption.textContent = translations[lang].recurrenceNone;
+  }
+  let recurrenceDailyOption = document.querySelector(
+    '#recurrence-rule-select option[value="daily"]',
+  );
+  if (recurrenceDailyOption) {
+    recurrenceDailyOption.textContent = translations[lang].recurrenceDaily;
+  }
+  let recurrenceWeeklyOption = document.querySelector(
+    '#recurrence-rule-select option[value="weekly"]',
+  );
+  if (recurrenceWeeklyOption) {
+    recurrenceWeeklyOption.textContent = translations[lang].recurrenceWeekly;
+  }
+  let recurrenceMonthlyOption = document.querySelector(
+    '#recurrence-rule-select option[value="monthly"]',
+  );
+  if (recurrenceMonthlyOption) {
+    recurrenceMonthlyOption.textContent = translations[lang].recurrenceMonthly;
+  }
+  let recurrenceYearlyOption = document.querySelector(
+    '#recurrence-rule-select option[value="yearly"]',
+  );
+  if (recurrenceYearlyOption) {
+    recurrenceYearlyOption.textContent = translations[lang].recurrenceYearly;
   }
 }
 

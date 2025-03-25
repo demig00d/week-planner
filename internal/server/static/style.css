@@ -1452,3 +1452,26 @@ body.dark-theme .settings-button.data-button:hover {
 .link-button.spinning i {
   animation: spin 1s linear infinite;
 }
+
+.task-recurring-checkbox label.styled-checkbox {
+  font-size: 0.9em;
+  margin-bottom: 10px;
+}
+
+#recurrence-rule-container {
+  margin-bottom: 15px;
+}
+
+#recurrence-rule-container label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+#recurrence-rule-container select {
+  width: 100%;
+}
+
+.recurring-button.active {
+  color: var(--highlight-text-color); /* Example: Highlight color when active */
+}

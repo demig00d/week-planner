@@ -8,7 +8,7 @@ import {
   updateTranslations,
 } from "./localization.js";
 import { TASK_COLORS } from "./config.js";
-import { setDisplayedWeekStartDate } from "./app.js";
+import { setDisplayedWeekStartDate, getDisplayedWeekStartDate } from "./app.js";
 
 const settingsPopup = document.getElementById("settings-popup");
 const taskDetailsPopupOverlay = document.getElementById(
@@ -30,15 +30,18 @@ const toggleDescriptionModeBtn = document.getElementById(
   "toggle-description-mode-btn",
 );
 const descriptionModeIcon = document.getElementById("description-mode-icon");
-const markDoneTaskDetailsBtn = document.getElementById(
-  "mark-done-task-details",
-);
-const taskDetailsDateInput = document.getElementById("task-details-date");
 const datePickerContainer = document.getElementById("date-picker-container");
 const datePickerMonthYear = document.getElementById("date-picker-month-year");
 const datePickerGrid = document.getElementById("date-picker-grid");
 const fuzzySearchPopup = document.getElementById("fuzzy-search-popup");
 const fuzzySearchResultsList = document.getElementById("fuzzy-search-results");
+const recurringTaskDetailsBtn = document.getElementById(
+  "recurring-task-details",
+);
+const recurrenceRuleContainer = document.getElementById(
+  "recurrence-rule-container",
+);
+const recurrenceRuleSelect = document.getElementById("recurrence-rule-select");
 
 const exportDbBtn = document.getElementById("export-db-btn");
 const importDbInput = document.getElementById("import-db-input");
@@ -118,7 +121,7 @@ export function handleGlobalClick(event) {
   if (
     datePickerVisible &&
     !event.target.closest(".date-picker-container") &&
-    event.target !== taskDetailsDateInput
+    event.target !== document.getElementById("task-details-date")
   ) {
     datePickerContainer.style.display = "none";
     datePickerVisible = false;
@@ -219,6 +222,7 @@ export async function openTaskDetails(taskId) {
       return;
     }
     const isCompleted = task.completed === 1;
+    const taskDetailsDateInput = document.getElementById("task-details-date");
 
     // Set title input
     taskDetailsTitle.innerHTML = "";
@@ -264,6 +268,19 @@ export async function openTaskDetails(taskId) {
       taskDetailsDateInput.textContent = translations[lang].datePickerSetDate;
     }
     renderDatePicker();
+
+    // Set recurrence rule select
+    recurrenceRuleSelect.value = task.recurrence_rule || ""; // Set selected value, default to "" (None)
+
+    // Initially hide the recurrence rule container:
+    recurrenceRuleContainer.style.display = "none";
+
+    // Set visual state of the recurring task button based on recurrence rule
+    if (task.recurrence_rule && task.recurrence_rule !== "") {
+      recurringTaskDetailsBtn.classList.add("active");
+    } else {
+      recurringTaskDetailsBtn.classList.remove("active");
+    }
 
     // Show task details popup
     taskDetailsPopupOverlay.style.display = "flex";
@@ -330,6 +347,103 @@ export async function openTaskDetails(taskId) {
         });
     };
 
+    const markDoneTaskDetailsBtn = document.getElementById(
+      "mark-done-task-details",
+    );
+
+    if (markDoneTaskDetailsBtn) {
+      markDoneTaskDetailsBtn.addEventListener("click", async () => {
+        if (!currentTaskBeingViewed) return;
+        const isCompleted = markDoneTaskDetailsBtn.dataset.completed === "1";
+        const newCompletedStatus = isCompleted ? 0 : 1;
+
+        // Update the task's completion status *before* re-rendering.
+        const updated = await tasks.handleTaskCompletion(
+          currentTaskBeingViewed,
+          newCompletedStatus,
+          todayTasks,
+          (updatedTasks) => {
+            todayTasks = updatedTasks;
+          },
+        );
+
+        if (updated) {
+          // only update if the update was successful
+          const taskElement = document.querySelector(
+            `.event[data-task-id="${currentTaskBeingViewed}"]`,
+          );
+          if (taskElement) {
+            updateTaskCompletionDisplay(taskElement, newCompletedStatus);
+          }
+
+          let displayedWeekStartDateForRender = getDisplayedWeekStartDate();
+
+          // If task was recurring, update displayedWeekStartDateForRender *before* fetching details
+          if (currentTaskDetails && currentTaskDetails.recurrence_rule) {
+            displayedWeekStartDateForRender = utils.getStartOfWeek(new Date());
+          }
+
+          const currentTaskDetails = await api.fetchTaskDetails(
+            currentTaskBeingViewed,
+          );
+          let newDueDateForLog = "unknown";
+          let newDueDateDateObject = null; // To store the Date object
+          if (currentTaskDetails && currentTaskDetails.due_date) {
+            newDueDateForLog = currentTaskDetails.due_date;
+            newDueDateDateObject = new Date(currentTaskDetails.due_date); // Parse to Date object
+          } else {
+            newDueDateForLog = "no due date found in fetched task details";
+          }
+
+          let weekStartDateToRender = displayedWeekStartDateForRender; // Default to current week
+
+          if (newDueDateDateObject) {
+            weekStartDateToRender = utils.getStartOfWeek(newDueDateDateObject);
+            setDisplayedWeekStartDate(weekStartDateToRender);
+          }
+
+          await calendar.renderWeekCalendar(weekStartDateToRender);
+          await calendar.renderInbox();
+          closeTaskDetailsPopup();
+          await ui.refreshTodayTasks();
+          updateTabTitle();
+        }
+      });
+    } else {
+    }
+
+    colorSwatches.forEach((swatch) => {
+      swatch.addEventListener("click", async () => {
+        const selectedColor = swatch.dataset.color;
+
+        // Remove 'selected-color' class from all swatches
+        colorSwatches.forEach((s) => s.classList.remove("selected-color"));
+
+        // Add 'selected-color' class to the clicked swatch
+        swatch.classList.add("selected-color");
+
+        // Update the task's color in the database
+        await api.updateTask(currentTaskBeingViewed, { color: selectedColor });
+
+        // Find and update the task element in the UI
+        const taskElement = document.querySelector(
+          `.event[data-task-id="${currentTaskBeingViewed}"]`,
+        );
+
+        if (taskElement) {
+          taskElement.dataset.taskColor = selectedColor;
+          taskElement.style.backgroundColor =
+            getTaskBackgroundColor(selectedColor);
+        }
+        const todayTaskIndex = todayTasks.findIndex(
+          (t) => t.id === currentTaskBeingViewed,
+        );
+        if (todayTaskIndex !== -1) {
+          todayTasks[todayTaskIndex].color = selectedColor;
+        }
+      });
+    });
+
     updateMarkAsDoneButton(isCompleted);
   } catch (error) {
     console.error("Error fetching task details:", error);
@@ -345,50 +459,30 @@ export function closeTaskDetailsPopup() {
 
 export function adjustTextareaHeight() {
   if (taskDetailsPopupOverlay.style.display !== "flex") return;
-
   const popup = taskDetailsPopup;
   if (!popup) return;
-
   const topBarHeight =
     popup.querySelector(".task-popup-top-bar")?.offsetHeight || 0;
   const titleHeight =
     popup.querySelector(".task-details-title")?.offsetHeight || 0;
+  const recurrenceContainerHeight =
+    popup.querySelector("#recurrence-rule-container")?.offsetHeight || 0;
   const labelHeight =
     popup.querySelector(".task-details-popup-content label")?.offsetHeight || 0;
-  const contentPaddingVertical = 40;
-  const popupPaddingVertical = 40;
-  const marginBottom = 20;
-  const totalFixedElementsHeight =
-    topBarHeight +
-    titleHeight +
-    labelHeight +
-    contentPaddingVertical +
-    popupPaddingVertical +
-    marginBottom;
-  const maxHeightVH = 65;
-  const viewportHeight = window.innerHeight;
-  const maxHeightPixels = (maxHeightVH / 100) * viewportHeight;
-  const availableHeight = Math.max(
-    maxHeightPixels - totalFixedElementsHeight,
-    0,
-  );
+
+  const otherElementsHeight =
+    topBarHeight + titleHeight + recurrenceContainerHeight + labelHeight;
+  const paddingAndMargin = 80;
+  const maxHeight = window.innerHeight * 0.65;
+  let availableHeight = maxHeight - otherElementsHeight - paddingAndMargin;
+  availableHeight = Math.max(availableHeight, 100);
 
   if (isDescriptionRenderedMode) {
     taskDescriptionRendered.style.height = "auto";
-    const renderedScrollHeight = taskDescriptionRendered.scrollHeight;
-    const newHeight = Math.min(
-      Math.max(renderedScrollHeight, parseInt(minDescriptionHeight)),
-      availableHeight,
-    );
-    taskDescriptionRendered.style.height = `${newHeight}px`;
+    taskDescriptionRendered.style.height = `${Math.min(taskDescriptionRendered.scrollHeight, availableHeight)}px`;
   } else {
     taskDescriptionTextarea.style.height = "auto";
-    const textareaScrollHeight = taskDescriptionTextarea.scrollHeight;
-    const newHeight = Math.min(
-      Math.max(textareaScrollHeight, parseInt(minDescriptionHeight)),
-      availableHeight,
-    );
-    taskDescriptionTextarea.style.height = `${newHeight}px`;
+    taskDescriptionTextarea.style.height = `${Math.min(taskDescriptionTextarea.scrollHeight, availableHeight)}px`;
   }
 }
 
@@ -699,6 +793,7 @@ function renderDatePicker() {
   const lang = localStorage.getItem("language") || "ru";
   const monthNames = translations[lang].monthNames;
   const dayNamesShort = translations[lang].dayNamesShort;
+  const taskDetailsDateInput = document.getElementById("task-details-date");
 
   const date = datePickerCurrentDate;
   const firstDayOfMonth = new Date(
@@ -755,6 +850,7 @@ function renderDatePicker() {
 }
 
 async function handleDateSelection(dateString) {
+  const taskDetailsDateInput = document.getElementById("task-details-date");
   taskDetailsDateInput.dataset.selectedDate = dateString;
   taskDetailsDateInput.textContent = new Date(dateString).toLocaleDateString(
     localStorage.getItem("language") || "ru",
@@ -810,27 +906,7 @@ async function updateTaskDueDate(newDate) {
   });
 }
 
-markDoneTaskDetailsBtn.addEventListener("click", async () => {
-  if (!currentTaskBeingViewed) return;
-  const isCompleted = markDoneTaskDetailsBtn.dataset.completed === "1";
-  const newCompletedStatus = isCompleted ? 0 : 1;
-  tasks.handleTaskCompletion(
-    currentTaskBeingViewed,
-    newCompletedStatus,
-    todayTasks,
-    async (updatedTasks) => {
-      await refreshTodayTasks();
-      updateTabTitle();
-    },
-  );
-  const taskElement = document.querySelector(
-    `.event[data-task-id="${currentTaskBeingViewed}"]`,
-  );
-  if (taskElement) {
-    updateTaskCompletionDisplay(taskElement, newCompletedStatus);
-  }
-});
-
+const taskDetailsDateInput = document.getElementById("task-details-date");
 taskDetailsDateInput.addEventListener("click", (event) => {
   event.stopPropagation();
   datePickerVisible = !datePickerVisible;
@@ -867,6 +943,7 @@ document
 document
   .getElementById("date-picker-reset-date")
   .addEventListener("click", async () => {
+    const taskDetailsDateInput = document.getElementById("task-details-date");
     taskDetailsDateInput.dataset.selectedDate = "";
     taskDetailsDateInput.textContent =
       translations[localStorage.getItem("language") || "ru"].datePickerSetDate;
@@ -1078,3 +1155,36 @@ async function handleImportDb(event) {
     importDbInput.value = "";
   }
 }
+
+recurringTaskDetailsBtn.addEventListener("click", () => {
+  // Toggle visibility of recurrence rule dropdown
+  const isCurrentlyVisible = recurrenceRuleContainer.style.display === "block";
+  recurrenceRuleContainer.style.display = isCurrentlyVisible ? "none" : "block";
+
+  // Update button visual state *only if* we are hiding the dropdown AND the select has a value
+  if (isCurrentlyVisible && recurrenceRuleSelect.value === "") {
+    recurringTaskDetailsBtn.classList.remove("active"); // Remove highlight if no rule
+  } else if (!isCurrentlyVisible) {
+    recurringTaskDetailsBtn.classList.add("active");
+  }
+});
+
+// Save the recurrence rule when a dropdown option is selected.
+recurrenceRuleSelect.addEventListener("change", async () => {
+  if (!currentTaskBeingViewed) return;
+
+  const selectedRule = recurrenceRuleSelect.value;
+  const taskDetailsDateInput = document.getElementById("task-details-date");
+  await api.updateTask(currentTaskBeingViewed, {
+    recurrence_rule: selectedRule,
+    due_date: taskDetailsDateInput.dataset.selectedDate,
+  });
+
+  // Update the button's active state based on selection
+  if (selectedRule) {
+    recurringTaskDetailsBtn.classList.add("active");
+  } else {
+    recurringTaskDetailsBtn.classList.remove("active");
+  }
+  adjustTextareaHeight();
+});

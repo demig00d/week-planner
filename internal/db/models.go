@@ -8,13 +8,14 @@ import (
 )
 
 type Task struct {
-	ID          int      `gorm:"primaryKey;autoIncrement" json:"id"`
-	Title       string   `gorm:"not null;index:idx_tasks_title_duedate" json:"title"`
-	DueDate     NullTime `gorm:"type:date;index:idx_tasks_title_duedate" json:"due_date"`
-	Completed   int      `gorm:"default:0" json:"completed"`
-	TaskOrder   int      `json:"order"`
-	Color       string   `gorm:"default:''" json:"color"`
-	Description string   `json:"description"`
+	ID             int      `gorm:"primaryKey;autoIncrement" json:"id"`
+	Title          string   `gorm:"not null;index:idx_tasks_title_duedate" json:"title"`
+	DueDate        NullTime `gorm:"type:date;index:idx_tasks_title_duedate" json:"due_date"`
+	Completed      int      `gorm:"default:0" json:"completed"`
+	TaskOrder      int      `json:"order"`
+	Color          string   `gorm:"default:''" json:"color"`
+	Description    string   `gorm:"description"`
+	RecurrenceRule string   `gorm:"default:''" json:"recurrence_rule"`
 }
 
 type Tasks []Task

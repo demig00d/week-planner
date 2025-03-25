@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"strconv"
@@ -12,24 +13,19 @@ import (
 	"week-planner/internal/db"
 	"week-planner/internal/jsonlog"
 
-	"log/slog"
-
 	"github.com/gorilla/mux"
 )
 
-// handleError handles an error by logging it and sending an appropriate HTTP response.
-// If the error is an instance of *db.APIError, its WriteResponse method is used for a detailed response.
+// handleError handles errors, logging them and sending HTTP responses.
 func handleError(w http.ResponseWriter, r *http.Request, err error) {
 	jsonlog.LogCtx(r.Context(), slog.LevelError, err.Error(), "error", err)
 
-	// If the error is of type APIError, use its method to respond
 	apiErr, ok := err.(*db.APIError)
 	if ok {
 		apiErr.WriteResponse(w)
 		return
 	}
 
-	// Send a standard 500 response with an error message
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusInternalServerError)
 	json.NewEncoder(w).Encode(map[string]string{
@@ -38,26 +34,25 @@ func handleError(w http.ResponseWriter, r *http.Request, err error) {
 	})
 }
 
-// taskToJSON converts the db.Task struct into a JSON-compatible map[string]interface{}.
-// If DueDate is valid, it is formatted according to the specified format.
+// taskToJSON converts db.Task to JSON.
 func taskToJSON(task db.Task) map[string]interface{} {
 	dueDate := ""
-	// If the due date is valid, format it as a string
 	if task.DueDate.Valid {
 		dueDate = task.DueDate.Time.Format(config.DateFormat)
 	}
 	return map[string]interface{}{
-		"id":          task.ID,
-		"title":       task.Title,
-		"due_date":    dueDate,
-		"completed":   task.Completed,
-		"order":       task.TaskOrder,
-		"color":       task.Color,
-		"description": task.Description,
+		"id":              task.ID,
+		"title":           task.Title,
+		"due_date":        dueDate,
+		"completed":       task.Completed,
+		"order":           task.TaskOrder,
+		"color":           task.Color,
+		"description":     task.Description,
+		"recurrence_rule": task.RecurrenceRule,
 	}
 }
 
-// tasksToJSON converts a slice of db.Tasks into a slice of JSON-compatible maps.
+// tasksToJSON converts []db.Tasks to JSON.
 func tasksToJSON(tasks db.Tasks) []map[string]interface{} {
 	result := make([]map[string]interface{}, len(tasks))
 	for i, task := range tasks {
@@ -66,8 +61,7 @@ func tasksToJSON(tasks db.Tasks) []map[string]interface{} {
 	return result
 }
 
-// GetTasksHandler handles HTTP requests for retrieving a list of tasks.
-// It extracts date, start date, and end date parameters from the URL and returns the tasks list in JSON format.
+// GetTasksHandler retrieves a list of tasks.
 func GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 	tasks, err := db.GetTasks(
 		r.URL.Query().Get("date"),
@@ -78,22 +72,22 @@ func GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 		handleError(w, r, err)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(tasksToJSON(tasks))
 }
 
-// GetInboxTitleHandler handles HTTP requests for retrieving the inbox title.
-// It returns the title as a JSON object.
+// GetInboxTitleHandler retrieves the inbox title.
 func GetInboxTitleHandler(w http.ResponseWriter, r *http.Request) {
 	title, err := db.GetInboxTitle()
 	if err != nil {
 		handleError(w, r, err)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"inbox_title": title})
 }
 
-// UpdateInboxTitleHandler handles HTTP requests for updating the inbox title.
-// It expects JSON with the new title and updates it in the database.
+// UpdateInboxTitleHandler updates the inbox title.
 func UpdateInboxTitleHandler(w http.ResponseWriter, r *http.Request) {
 	var data map[string]string
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
@@ -107,20 +101,19 @@ func UpdateInboxTitleHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// CreateTaskHandler handles HTTP requests for creating a new task.
-// It decodes the input JSON, checks for required fields, processes the due date, and creates the task in the database.
+// CreateTaskHandler creates a new task.
 func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	var taskInput struct {
-		Title       string `json:"title"`
-		DueDate     string `json:"due_date"`
-		Order       int    `json:"order"`
-		Color       string `json:"color"`
-		Description string `json:"description"`
+		Title          string `json:"title"`
+		DueDate        string `json:"due_date"`
+		Order          int    `json:"order"`
+		Color          string `json:"color"`
+		Description    string `json:"description"`
+		RecurrenceRule string `json:"recurrence_rule"`
 	}
 
 	slog.Debug("Received request to create task")
 
-	// Decode JSON from the request body
 	err := json.NewDecoder(r.Body).Decode(&taskInput)
 	if err != nil {
 		slog.Debug("Error decoding request body", "error", err)
@@ -131,14 +124,12 @@ func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	slog.Debug("Received task data", "task_data", taskInput)
 
-	// Check required field title
 	if taskInput.Title == "" {
 		handleError(w, r, db.NewAPIError(400, "Title is required"))
 		return
 	}
 
 	var dueDateNullTime db.NullTime
-	// If a due date is provided, try to parse it
 	if taskInput.DueDate != "" {
 		parsedTime, err := time.Parse(config.DateFormat, taskInput.DueDate)
 		if err != nil {
@@ -149,13 +140,13 @@ func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		dueDateNullTime = db.NullTime{Time: parsedTime, Valid: true}
 	}
 
-	// Form a task object to save
 	task := db.Task{
-		Title:       taskInput.Title,
-		DueDate:     dueDateNullTime,
-		TaskOrder:   taskInput.Order,
-		Color:       taskInput.Color,
-		Description: taskInput.Description,
+		Title:          taskInput.Title,
+		DueDate:        dueDateNullTime,
+		TaskOrder:      taskInput.Order,
+		Color:          taskInput.Color,
+		Description:    taskInput.Description,
+		RecurrenceRule: taskInput.RecurrenceRule,
 	}
 
 	createdTask, err := db.CreateTask(task)
@@ -167,14 +158,12 @@ func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	slog.Debug("Created task", "task", createdTask)
 
-	// Send response with the created task
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(taskToJSON(createdTask))
 }
 
-// GetTaskHandler handles HTTP requests for retrieving a task by its ID.
-// It extracts the ID from the URL, retrieves the task from the database, and returns it in JSON format.
+// GetTaskHandler retrieves a task by its ID.
 func GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
 	task, err := db.GetTask(id)
@@ -182,11 +171,11 @@ func GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 		handleError(w, r, err)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(taskToJSON(task))
 }
 
-// UpdateTaskHandler handles HTTP requests for updating task data.
-// It extracts the task ID from the URL, decodes the updates from JSON, and updates the record in the database.
+// UpdateTaskHandler handles updating task data.
 func UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
 	var updates map[string]interface{}
@@ -201,11 +190,95 @@ func UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		handleError(w, r, err)
 		return
 	}
+
+	if completedVal, ok := updates["completed"]; ok {
+		slog.Debug("Completed update received", "task_id", id, "completed", completedVal)
+
+		if completed, isBool := completedVal.(bool); isBool && completed { // Handle boolean
+			slog.Debug("Task marked as completed (bool)", "task_id", id)
+			task, err := db.GetTask(id)
+			if err != nil {
+				handleError(w, r, err)
+				return
+			}
+			slog.Debug("Task retrieved", "task", task)
+			if task.RecurrenceRule != "" {
+				slog.Debug("Task is recurring. Calling createNextRecurringTask", "task_id", id)
+				if err := createNextRecurringTask(task); err != nil {
+					handleError(w, r, fmt.Errorf("error creating next recurring task: %w", err))
+					return
+				}
+			} else {
+				slog.Debug("Task is NOT recurring", "task_id", id)
+			}
+		} else if completedFloat, isFloat := completedVal.(float64); isFloat && completedFloat == 1 { // Handle float64
+			slog.Debug("Task marked as completed (float64)", "task_id", id)
+			task, err := db.GetTask(id)
+			if err != nil {
+				handleError(w, r, err)
+				return
+			}
+			slog.Debug("Task retrieved", "task", task)
+			if task.RecurrenceRule != "" {
+				slog.Debug("Task is recurring. Calling createNextRecurringTask", "task_id", id)
+				if err := createNextRecurringTask(task); err != nil {
+					handleError(w, r, fmt.Errorf("error creating next recurring task: %w", err))
+					return
+				}
+			} else {
+				slog.Debug("Task is NOT recurring", "task_id", id)
+			}
+
+		} else {
+			slog.Debug("Completed value is not boolean or 1", "task_id", id, "completed", completedVal)
+		}
+	} else {
+		slog.Debug("No completed update received", "task_id", id)
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
-// BulkUpdateTaskOrderHandler handles HTTP requests for bulk updating task orders.
-// It decodes a list of tasks from JSON and updates their order in the database.
+func createNextRecurringTask(task db.Task) error {
+	if !task.DueDate.Valid {
+		return fmt.Errorf("recurring task without a due date cannot be processed")
+	}
+
+	nextDueDate := task.DueDate.Time
+	switch task.RecurrenceRule {
+	case "daily":
+		nextDueDate = nextDueDate.AddDate(0, 0, 1)
+	case "weekly":
+		nextDueDate = nextDueDate.AddDate(0, 0, 7)
+	default:
+		return fmt.Errorf("unsupported recurrence rule: %s", task.RecurrenceRule)
+	}
+
+	newTask := db.Task{
+		Title:          task.Title,
+		Description:    task.Description,
+		Color:          task.Color,
+		RecurrenceRule: task.RecurrenceRule,
+		DueDate:        db.NullTime{Time: nextDueDate, Valid: true},
+		Completed:      0,
+		TaskOrder:      0,
+	}
+
+	slog.Debug("Creating newTask in createNextRecurringTask",
+		"newTask", newTask,
+		"newDueDateFormatted", newTask.DueDate.Time.Format(config.DateFormat), // <---- ADDED LOG
+	)
+
+	createdTask, err := db.CreateTask(newTask)
+	if err != nil {
+		return fmt.Errorf("failed to create next task instance: %w", err)
+	}
+	slog.Debug("Successfully created newTask in createNextRecurringTask", "createdTask", createdTask)
+	slog.Info("Created next recurring task", "task_id", newTask.ID, "title", newTask.Title, "due_date", newTask.DueDate.Time.Format(config.DateFormat), "rule", newTask.RecurrenceRule)
+	return nil
+}
+
+// BulkUpdateTaskOrderHandler handles bulk updating task orders.
 func BulkUpdateTaskOrderHandler(w http.ResponseWriter, r *http.Request) {
 	var tasks db.Tasks
 	if err := json.NewDecoder(r.Body).Decode(&tasks); err != nil {
@@ -219,8 +292,7 @@ func BulkUpdateTaskOrderHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// DeleteTaskHandler handles HTTP requests for deleting a task by its ID.
-// It extracts the ID from the URL, deletes the task from the database, and returns the status of the operation.
+// DeleteTaskHandler deletes a task by its ID.
 func DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
@@ -237,8 +309,7 @@ func DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// SearchTasksHandler handles HTTP requests for searching tasks.
-// It extracts the "query" parameter from the URL, performs a search in the database, and returns the results in JSON format.
+// SearchTasksHandler handles searching tasks.
 func SearchTasksHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("query")
 	if query == "" {
@@ -246,12 +317,11 @@ func SearchTasksHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Pagination parameters from query string
 	pageStr := r.URL.Query().Get("page")
 	pageSizeStr := r.URL.Query().Get("pageSize")
 
-	page := 1      // Default page number
-	pageSize := 10 // Default page size
+	page := 1
+	pageSize := 10
 
 	if pageSizeStr != "" {
 		ps, err := strconv.Atoi(pageSizeStr)
@@ -278,14 +348,14 @@ func SearchTasksHandler(w http.ResponseWriter, r *http.Request) {
 		handleError(w, r, err)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(tasksToJSON(tasks))
 }
 
-// ExportDbHandler handles the export of the SQLite database file.
+// ExportDbHandler exports the SQLite database file.
 func ExportDbHandler(w http.ResponseWriter, r *http.Request) {
 	dbPath := "tasks.db"
 
-	// Open the database file
 	dbFile, err := os.Open(dbPath)
 	if err != nil {
 		handleError(w, r, fmt.Errorf("exportDbHandler: could not open db file: %w", err))
@@ -293,35 +363,30 @@ func ExportDbHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer dbFile.Close()
 
-	// Get file info to set headers
 	fileInfo, err := dbFile.Stat()
 	if err != nil {
 		handleError(w, r, fmt.Errorf("exportDbHandler: could not get file info: %w", err))
 		return
 	}
 
-	// Set headers for file download
 	w.Header().Set("Content-Disposition", "attachment; filename=tasks.db")
-	w.Header().Set("Content-Type", "application/octet-stream") // Generic binary file type
+	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Content-Length", strconv.Itoa(int(fileInfo.Size())))
 
-	// Serve the file content
 	_, err = io.Copy(w, dbFile)
 	if err != nil {
 		handleError(w, r, fmt.Errorf("exportDbHandler: could not copy file to response: %w", err))
 	}
 }
 
-// ImportDbHandler handles the import of a new SQLite database file.
+// ImportDbHandler handles importing a new SQLite database file.
 func ImportDbHandler(w http.ResponseWriter, r *http.Request) {
-	// Parse multipart form, limit uploads to 10MB
 	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
 		handleError(w, r, db.NewAPIError(http.StatusBadRequest, fmt.Sprintf("importDbHandler: parse form failed: %v", err)))
 		return
 	}
 
-	// Get the file and file header from form data
 	file, header, err := r.FormFile("database")
 	if err != nil {
 		handleError(w, r, db.NewAPIError(http.StatusBadRequest, "importDbHandler: invalid file upload"))
@@ -329,60 +394,63 @@ func ImportDbHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// Basic file type check (can be improved with more robust validation if needed)
 	contentType := header.Header.Get("Content-Type")
-	if contentType != "application/octet-stream" && contentType != "application/x-sqlite3" { // Common content types for sqlite db
+	if contentType != "application/octet-stream" && contentType != "application/x-sqlite3" {
 		slog.Warn("importDbHandler: Content-Type is not application/octet-stream or application/x-sqlite3", "content_type", contentType)
-		// Proceed anyway, but log a warning. For stricter validation, return an error here.
 	}
 
-	tempDBPath := "temp_tasks.db" // Temporary file to store uploaded DB
+	tempDBPath := "temp_tasks.db"
 	tempFile, err := os.OpenFile(tempDBPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		handleError(w, r, fmt.Errorf("importDbHandler: could not create temp file: %w", err))
 		return
 	}
-	defer os.Remove(tempDBPath) // Clean up temp file
+	defer os.Remove(tempDBPath)
 	defer tempFile.Close()
 
-	// Copy uploaded file to temp file
 	_, err = io.Copy(tempFile, file)
 	if err != nil {
 		handleError(w, r, fmt.Errorf("importDbHandler: could not copy uploaded file to temp file: %w", err))
 		return
 	}
 
-	// Basic validation: Try to open the uploaded DB to see if it's a valid SQLite file
-	_, err = db.OpenTestDB(tempDBPath) // Using a test open function to avoid replacing the main DB directly yet
+	_, err = db.OpenTestDB(tempDBPath)
 	if err != nil {
 		handleError(w, r, db.NewAPIError(http.StatusBadRequest, "importDbHandler: invalid database file or corrupted database"))
 		return
 	}
 
-	// Replace the current database with the new one
 	oldDBPath := "tasks.db"
-	newDBPath := "tasks.db.new" // Temporary name during replacement
+	newDBPath := "tasks.db.new"
 
-	// Rename current DB to .old (backup)
 	err = os.Rename(oldDBPath, newDBPath)
 	if err != nil {
 		handleError(w, r, fmt.Errorf("importDbHandler: could not rename current db for backup: %w", err))
 		return
 	}
-	defer os.Remove(newDBPath) // Cleanup backup if rename fails later on
+	defer os.Remove(newDBPath)
 
-	// Rename uploaded DB (temp file) to the actual DB path
 	err = os.Rename(tempDBPath, oldDBPath)
 	if err != nil {
-		// Try to restore from backup if rename fails
-		os.Rename(newDBPath, oldDBPath) // Attempt restore
+		os.Rename(newDBPath, oldDBPath)
 		handleError(w, r, fmt.Errorf("importDbHandler: could not rename temp db to main db: %w, database potentially corrupted, backup restored", err))
 		return
 	}
 
-	// Re-initialize the database connection - important to use the new DB
-	db.InitDB() // Re-initialize the DB connection
+	db.InitDB()
 
-	w.WriteHeader(http.StatusOK)                      // Respond with success
-	w.Write([]byte("Database imported successfully")) // Optional success message in body
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "Database imported successfully"})
+}
+
+// CheckRecurringTasksHandler creates new recurring task occurrences.
+func CheckRecurringTasksHandler(w http.ResponseWriter, r *http.Request) {
+	if err := db.CreateNextOccurrencesForUndoneRecurringTasks(); err != nil {
+		handleError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "Recurring tasks checked and updated."})
 }

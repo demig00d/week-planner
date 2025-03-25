@@ -1,8 +1,9 @@
 import * as api from "./api.js";
 import * as ui from "./ui.js";
+import * as calendar from "./calendar.js";
+import { getDisplayedWeekStartDate } from "./app.js";
 import { translations, loadLanguage } from "./localization.js";
 import { TASK_COLORS } from "./config.js";
-
 export let draggedTask = null;
 
 // Create a task element (the DOM representation of a task)
@@ -422,6 +423,7 @@ export async function handleTaskCompletion(
         }
         return task;
       });
+      await calendar.renderWeekCalendar(getDisplayedWeekStartDate());
       updateTodayTasks(updatedTodayTasks);
     }
 

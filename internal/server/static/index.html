@@ -254,9 +254,8 @@
               id="recurring-task-details"
               class="recurring-button"
               title="Recurring task"
-              style="display: none"
             >
-              <i class="fas fa-sync-alt"></i>
+              <i class="fas fa-sync-alt recurrence-icon"></i>
             </button>
             <button
               id="reminder-task-details"
@@ -287,7 +286,21 @@
         </div>
         <h2 id="task-details-title">Task Title</h2>
         <div class="task-details-popup-content">
-          <label for="task-description-textarea">
+          <div id="recurrence-rule-container" class="settings-option">
+            <label for="recurrence-rule-select" data-translate="recurrence"
+              >Recurrence</label
+            >
+            <select id="recurrence-rule-select" class="language-select">
+              <option value="" data-translate="recurrenceNone">None</option>
+              <option value="daily" data-translate="recurrenceDaily">
+                Daily
+              </option>
+              <option value="weekly" data-translate="recurrenceWeekly">
+                Weekly
+              </option>
+            </select>
+          </div>
+          <label for="task-description-textarea" data-translate="description">
             Description:
             <button
               id="toggle-description-mode-btn"

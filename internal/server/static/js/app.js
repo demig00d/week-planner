@@ -39,6 +39,19 @@ async function checkAndRefreshTasks() {
   const currentDate = new Date().toLocaleDateString("en-CA");
   if (currentDate !== lastKnownDate) {
     lastKnownDate = currentDate;
+
+    try {
+      const response = await fetch("/api/check_recurring_tasks", {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      console.log("Checked and created recurring tasks");
+    } catch (error) {
+      console.error("Could not check/create recurring tasks:", error);
+    }
+
     setDisplayedWeekStartDate(utils.getStartOfWeek(new Date()));
     await calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
     await ui.refreshTodayTasks();
