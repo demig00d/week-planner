@@ -97,6 +97,9 @@ export async function renderWeekCalendar(date) {
 
     const taskContainer = document.createElement("div");
     taskContainer.classList.add("task-container");
+    // Initially hide the container if we are going to render tasks into it.
+    // We'll make it visible after tasks (or lack thereof) are added.
+    taskContainer.style.visibility = "hidden";
     dayDiv.appendChild(taskContainer);
 
     const dailyTasks = weekTasks.filter((task) => {
@@ -118,6 +121,8 @@ export async function renderWeekCalendar(date) {
     });
     dailyTasks.sort((a, b) => a.order - b.order);
     await tasks.renderTasks(dailyTasks, taskContainer);
+    // Make the container visible after rendering.
+    taskContainer.style.visibility = "visible";
 
     const newTaskForm = document.createElement("form");
     newTaskForm.classList.add("new-task-form");
@@ -212,7 +217,10 @@ export async function renderInbox() {
   inboxDiv.addEventListener("dragleave", tasks.handleDragLeave);
 
   const inboxTasks = await api.fetchInboxTasks();
+  inboxTasks.sort((a, b) => a.order - b.order); // Ensure inbox tasks are sorted
   const taskContainer = document.createElement("div");
+  // Initially hide the container, make visible after rendering
+  taskContainer.style.visibility = "hidden";
   inboxDiv.appendChild(taskContainer);
   await tasks.renderTasks(inboxTasks, taskContainer);
 
@@ -220,6 +228,8 @@ export async function renderInbox() {
   inboxForm.classList.add("new-task-form");
   inboxForm.innerHTML = `<input type="text" placeholder="${translations[lang].newTaskSomeday}">`;
   inboxDiv.appendChild(inboxForm);
+  // Make the task container visible after rendering tasks and adding the form.
+  taskContainer.style.visibility = "visible";
   const inboxInputElement = inboxForm.querySelector('input[type="text"]');
 
   const handleInboxTaskEvent = async (event) => {

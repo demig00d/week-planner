@@ -181,7 +181,27 @@ export async function searchTasks(query, pageSize, page) {
   }
 }
 
-//Fetch Today tasks
+/**
+ * Checks and creates recurring tasks on the server.
+ * @returns {Promise<boolean>} True if successful, false otherwise.
+ */
+export async function checkRecurringTasks() {
+  try {
+    const response = await fetch(`${API_BASE}/check_recurring_tasks`, {
+      method: "POST",
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    console.log("Checked and created recurring tasks");
+    return true;
+  } catch (error) {
+    console.error("Could not check/create recurring tasks:", error);
+    return false;
+  }
+}
+
+// Fetch Today tasks
 export async function fetchTodayTasks() {
   const todayString = new Date().toLocaleDateString("en-CA");
   try {

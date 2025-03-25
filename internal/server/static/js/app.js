@@ -15,47 +15,36 @@ const searchBtn = document.getElementById("search-btn");
 const fuzzySearchInput = document.getElementById("fuzzy-search-input");
 
 // State variables
-let _displayedWeekStartDate = utils.getStartOfWeek(new Date()); // Use an underscore to indicate it's "private" to app.js
+let _displayedWeekStartDate = utils.getStartOfWeek(new Date());
 let currentTheme = localStorage.getItem("theme") || "auto";
 let displayFullWeekdays = localStorage.getItem("fullWeekdays") === "true";
 let wrapTaskTitles = localStorage.getItem("wrapTaskTitles") !== "false";
-let lastKnownDate = new Date().toLocaleDateString("en-CA"); // Store last known date
+let lastKnownDate = new Date().toLocaleDateString("en-CA");
 if (localStorage.getItem("wrapTaskTitles") === null) {
   wrapTaskTitles = initialWrapTaskTitles;
 }
+let initialTaskLinkHandled = false;
 
-// Getter for displayedWeekStartDate (optional, but good practice)
+// Getter/Setter for displayedWeekStartDate
 export const getDisplayedWeekStartDate = () => _displayedWeekStartDate;
-
-// Setter function for displayedWeekStartDate - This is what we export
 export const setDisplayedWeekStartDate = (newDate) => {
   _displayedWeekStartDate = newDate;
 };
+const getDisplayedWeekStartDateInternal = () => _displayedWeekStartDate; // Internal use
 
-// Now use the getter internally in app.js where you need the value
-const getDisplayedWeekStartDateInternal = () => _displayedWeekStartDate;
-
+// Check for date change and handle recurring tasks
 async function checkAndRefreshTasks() {
   const currentDate = new Date().toLocaleDateString("en-CA");
   if (currentDate !== lastKnownDate) {
     lastKnownDate = currentDate;
-
-    try {
-      const response = await fetch("/api/check_recurring_tasks", {
-        method: "POST",
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      console.log("Checked and created recurring tasks");
-    } catch (error) {
-      console.error("Could not check/create recurring tasks:", error);
+    if (!(await api.checkRecurringTasks())) {
+      console.error("Could not check/create recurring tasks:"); // Keep error log concise
     }
-
+    // Refresh the week view as the check might have created new tasks for today
     setDisplayedWeekStartDate(utils.getStartOfWeek(new Date()));
     await calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
-    await ui.refreshTodayTasks();
-    ui.updateTabTitle();
+    await ui.refreshTodayTasks(); // This now uses ui.setTodayTasks
+    ui.updateTabTitle(); // Update title/favicon
   }
 }
 
@@ -64,191 +53,194 @@ async function initialize() {
   await loadLanguage();
   ui.updateSettingsLanguageSelector(localStorage.getItem("language") || "ru");
   ui.setTheme(currentTheme);
+  requestAnimationFrame(ui.updateSelectArrowsColor); // Update select arrows after theme
   await calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
   await calendar.renderInbox();
-  ui.updateSettingsText();
+  ui.updateSettingsText(); // Apply translations
   setupEventListeners();
-  // Set initial checkbox states based on localStorage - keep this *before* initial task link handling
-  document.getElementById("full-weekdays-checkbox").checked =
-    displayFullWeekdays;
-  document.getElementById("wrap-task-titles-checkbox").checked = wrapTaskTitles;
-  ui.handleCheckboxChange(document.getElementById("full-weekdays-checkbox"));
-  ui.handleCheckboxChange(document.getElementById("wrap-task-titles-checkbox"));
-  ui.updateTabTitle();
-  await checkAndRefreshTasks(); // Initial check on load
 
-  // Handle initial task link on page load, but only once and AFTER initialization is complete
-  if (!initialTaskLinkHandled) {
-    initialTaskLinkHandled = true;
-    handleInitialTaskLink();
+  // Set initial checkbox states and visual representation
+  const fullWeekdaysCheckbox = document.getElementById(
+    "full-weekdays-checkbox",
+  );
+  const wrapTitlesCheckbox = document.getElementById(
+    "wrap-task-titles-checkbox",
+  );
+  if (fullWeekdaysCheckbox) {
+    fullWeekdaysCheckbox.checked = displayFullWeekdays;
+    ui.handleCheckboxChange(fullWeekdaysCheckbox);
+  }
+  if (wrapTitlesCheckbox) {
+    wrapTitlesCheckbox.checked = wrapTaskTitles;
+    ui.handleCheckboxChange(wrapTitlesCheckbox);
   }
 
+  ui.updateTabTitle(); // Initial title/favicon set
+  await checkAndRefreshTasks(); // Initial check on load
+
+  if (!initialTaskLinkHandled) {
+    initialTaskLinkHandled = true;
+    handleInitialTaskLink(); // Handle potential deep link
+  }
+
+  // Add listener for system theme changes if theme is 'auto'
   if (currentTheme === "auto") {
     window
       .matchMedia("(prefers-color-scheme: dark)")
-      .addEventListener("change", (event) => {
-        ui.setTheme("auto");
-      });
+      .addEventListener("change", handleSystemThemeChange);
   }
 }
 
-let initialTaskLinkHandled = false; // Flag to prevent handling link multiple times on init
-// Corrected setupEventListeners
 function setupEventListeners() {
-  prevWeekButton.addEventListener("click", async () => {
-    setDisplayedWeekStartDate(
-      utils.addDays(getDisplayedWeekStartDateInternal(), -7),
-    ); // Use setter here
-    await calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
-    await checkAndRefreshTasks(); // Check date after navigation
-  });
-
-  nextWeekButton.addEventListener("click", async () => {
-    setDisplayedWeekStartDate(
-      utils.addDays(getDisplayedWeekStartDateInternal(), 7),
-    ); // Use setter here
-    await calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
-    await checkAndRefreshTasks(); // Check date after navigation
-  });
-
-  settingsBtn.addEventListener("click", ui.toggleSettingsPopup);
-  searchBtn.addEventListener("click", ui.toggleSearchPopup);
-  fuzzySearchInput.addEventListener("input", ui.handleSearchInput);
-  monthNameElement.addEventListener("click", handleMonthNameClick);
+  if (prevWeekButton) {
+    prevWeekButton.addEventListener("click", async () => {
+      setDisplayedWeekStartDate(
+        utils.addDays(getDisplayedWeekStartDateInternal(), -7),
+      );
+      await calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
+      await checkAndRefreshTasks(); // Refresh recurring etc.
+    });
+  }
+  if (nextWeekButton) {
+    nextWeekButton.addEventListener("click", async () => {
+      setDisplayedWeekStartDate(
+        utils.addDays(getDisplayedWeekStartDateInternal(), 7),
+      );
+      await calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
+      await checkAndRefreshTasks();
+    });
+  }
+  if (settingsBtn)
+    settingsBtn.addEventListener("click", ui.toggleSettingsPopup);
+  if (searchBtn) searchBtn.addEventListener("click", ui.toggleSearchPopup);
+  if (fuzzySearchInput)
+    fuzzySearchInput.addEventListener("input", ui.handleSearchInput);
+  if (monthNameElement)
+    monthNameElement.addEventListener("click", handleMonthNameClick);
 
   document.addEventListener("keydown", handleGlobalKeydown);
-  window.addEventListener("click", handleGlobalClick);
+  window.addEventListener("click", ui.handleGlobalClick);
   window.addEventListener("hashchange", handleHashChange);
 
-  document
-    .getElementById("theme-select")
-    .addEventListener("change", (event) => {
+  const themeSelect = document.getElementById("theme-select");
+  if (themeSelect) {
+    themeSelect.addEventListener("change", (event) => {
       const selectedTheme = event.target.value;
       localStorage.setItem("theme", selectedTheme);
       ui.setTheme(selectedTheme);
+      // Manage system theme listener
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      mediaQuery.removeEventListener("change", handleSystemThemeChange); // Remove first
       if (selectedTheme === "auto") {
-        window
-          .matchMedia("(prefers-color-scheme: dark)")
-          .addEventListener("change", handleSystemThemeChange);
-      } else {
-        window
-          .matchMedia("(prefers-color-scheme: dark)")
-          .removeEventListener("change", handleSystemThemeChange);
+        mediaQuery.addEventListener("change", handleSystemThemeChange); // Add back if auto
       }
     });
+  }
 
-  document
-    .getElementById("language-select-popup")
-    .addEventListener("change", (event) => {
-      ui.setLanguage(event.target.value);
-    });
+  const langSelect = document.getElementById("language-select-popup");
+  if (langSelect)
+    langSelect.addEventListener("change", (event) =>
+      ui.setLanguage(event.target.value),
+    );
 
-  document
-    .getElementById("full-weekdays-checkbox")
-    .addEventListener("change", handleFullWeekdaysChange);
-  document
-    .getElementById("wrap-task-titles-checkbox")
-    .addEventListener("change", handleWrapTaskTitlesChange);
+  const fullWeekdaysCheckbox = document.getElementById(
+    "full-weekdays-checkbox",
+  );
+  const wrapTitlesCheckbox = document.getElementById(
+    "wrap-task-titles-checkbox",
+  );
+  if (fullWeekdaysCheckbox) {
+    fullWeekdaysCheckbox.addEventListener("change", handleFullWeekdaysChange);
+    ui.handleCheckboxChange(fullWeekdaysCheckbox);
+  }
+  if (wrapTitlesCheckbox) {
+    wrapTitlesCheckbox.addEventListener("change", handleWrapTaskTitlesChange);
+    ui.handleCheckboxChange(wrapTitlesCheckbox);
+  }
 
-  document
-    .getElementById("task-details-popup-overlay")
-    .addEventListener("transitionend", () => {
-      if (
-        document.getElementById("task-details-popup-overlay").style.display ===
-        "flex"
-      ) {
-        document
-          .getElementById("task-details-popup-overlay")
-          .dispatchEvent(new CustomEvent("show.popup"));
-      } else {
-        document
-          .getElementById("task-details-popup-overlay")
-          .dispatchEvent(new CustomEvent("hide.popup"));
+  // Task completion in task details popup
+  const markDoneBtn = document.getElementById("mark-done-task-details");
+  if (markDoneBtn) {
+    markDoneBtn.addEventListener("click", async () => {
+      console.log(
+        "Mark done button clicked. Current task ID:",
+        ui.currentTaskBeingViewed,
+      );
+      const button = document.getElementById("mark-done-task-details"); // Re-fetch inside listener
+      const currentTaskId = ui.currentTaskBeingViewed; // Capture current ID
+
+      if (!currentTaskId || !button) {
+        console.error("Cannot mark done: Task ID or button not available.");
+        return;
       }
-    });
 
-  document
-    .getElementById("task-details-popup-overlay")
-    .addEventListener("show.popup", () => {
-      ui.adjustTextareaHeight(); //Call on show.popup event
-    });
+      const isCompleted = button.dataset.completed === "1";
+      const newCompletedStatus = isCompleted ? 0 : 1;
 
-  // Task completion in task details popup, correct todayTasks update
-  document
-    .getElementById("mark-done-task-details")
-    .addEventListener("click", () => {
-      if (ui.currentTaskBeingViewed) {
-        const isCompleted =
-          document.getElementById("mark-done-task-details").dataset
-            .completed === "1";
-        const newCompletedStatus = isCompleted ? 0 : 1;
-        tasks.handleTaskCompletion(
-          ui.currentTaskBeingViewed,
+      try {
+        await tasks.handleTaskCompletion(
+          currentTaskId,
           newCompletedStatus,
-          ui.todayTasks,
+          ui.todayTasks, // Pass current state
           (updatedTasks) => {
-            ui.todayTasks = updatedTasks;
+            // Pass the UPDATE FUNCTION
+            ui.setTodayTasks(updatedTasks); // Use the setter
+            ui.updateTabTitle(); // Update favicon
           },
         );
-        ui.updateMarkAsDoneButton(newCompletedStatus === 1);
-        const taskElement = document.querySelector(
-          `.event[data-task-id="${ui.currentTaskBeingViewed}"]`,
-        );
-        if (taskElement) {
-          ui.updateTaskCompletionDisplay(taskElement, newCompletedStatus);
-        }
+        // UI update for the button is handled within handleTaskCompletion if popup is open
+      } catch (error) {
+        console.error("Error handling task completion from popup:", error);
+        ui.showSnackbar("failedToUpdateTaskStatus", true);
       }
     });
+  } else {
+    console.error("Mark done button not found during setup.");
+  }
 
-  // Refresh tasks when the page becomes visible (tab switch back)
+  // Refresh tasks on visibility change (tab switch)
   document.addEventListener("visibilitychange", async () => {
     if (document.visibilityState === "visible") {
       await checkAndRefreshTasks();
     }
   });
 
-  const exportDbBtn = document.getElementById("export-db-btn");
-  if (exportDbBtn) {
-    exportDbBtn.addEventListener("click", ui.handleExportDb);
-  } else {
-    console.error(
-      "Element with id 'export-db-btn' not found, export functionality will not work.",
-    );
-  }
-
-  const importDbInput = document.getElementById("import-db-input");
-  if (importDbInput) {
-    importDbInput.addEventListener("change", ui.handleImportDb);
-  } else {
-    console.error(
-      "Element with id 'import-db-input' not found, import functionality will not work.",
-    );
-  }
+  // Export/Import handlers are attached directly in ui.js now
 }
 
 async function handleInitialTaskLink() {
   const hash = window.location.hash;
   if (hash.startsWith("#task/")) {
-    const taskId = hash.substring(6); // Extract taskId from #task/{taskId}
+    const taskId = hash.substring(6);
     try {
       const taskDetails = await api.fetchTaskDetails(taskId);
       if (taskDetails) {
-        ui.closeAllPopups();
+        ui.closeAllPopups(); // Close any other popups first
         if (taskDetails.due_date) {
-          setDisplayedWeekStartDate(
-            utils.getStartOfWeek(new Date(taskDetails.due_date)),
+          const taskDateObj = new Date(
+            Date.UTC(
+              taskDetails.due_date.split("-")[0],
+              taskDetails.due_date.split("-")[1] - 1,
+              taskDetails.due_date.split("-")[2],
+            ),
           );
-          calendar.renderWeekCalendar(
-            utils.getStartOfWeek(new Date(taskDetails.due_date)),
-          );
+          const startOfWeek = utils.getStartOfWeek(taskDateObj);
+          setDisplayedWeekStartDate(startOfWeek);
+          await calendar.renderWeekCalendar(startOfWeek); // Render the correct week
         } else {
+          await calendar.renderInbox(); // Ensure inbox is rendered
           document
             .getElementById("inbox")
-            .scrollIntoView({ behavior: "smooth" });
+            ?.scrollIntoView({ behavior: "smooth" });
         }
-        ui.highlightTask(taskId);
-
-        // Clear the hash from the URL after handling the link
+        ui.highlightTask(taskId); // Highlight after rendering/scrolling
+        history.pushState(
+          "",
+          document.title,
+          window.location.pathname + window.location.search,
+        ); // Clear hash
+      } else {
+        console.warn(`Task with ID ${taskId} not found from hash link.`);
         history.pushState(
           "",
           document.title,
@@ -257,17 +249,22 @@ async function handleInitialTaskLink() {
       }
     } catch (error) {
       console.error("Error fetching task details from link:", error);
+      history.pushState(
+        "",
+        document.title,
+        window.location.pathname + window.location.search,
+      );
     }
   }
 }
 
 function handleHashChange() {
-  handleInitialTaskLink();
+  handleInitialTaskLink(); // Re-evaluate hash on change
 }
 
-function handleMonthNameClick() {
+async function handleMonthNameClick() {
   setDisplayedWeekStartDate(utils.getStartOfWeek(new Date()));
-  calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
+  await calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
 }
 
 function handleGlobalKeydown(event) {
@@ -276,27 +273,25 @@ function handleGlobalKeydown(event) {
   }
 }
 
-function handleGlobalClick(event) {
-  ui.handleGlobalClick(event);
-}
-
 function handleSystemThemeChange(event) {
-  ui.setTheme("auto");
+  if (localStorage.getItem("theme") === "auto") {
+    ui.setTheme("auto"); // Re-apply auto theme based on new system preference
+  }
 }
 
-function handleFullWeekdaysChange(event) {
+async function handleFullWeekdaysChange(event) {
   ui.handleCheckboxChange(event.target);
   displayFullWeekdays = event.target.checked;
   localStorage.setItem("fullWeekdays", displayFullWeekdays);
-  calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
-  ui.updateSettingsText();
+  await calendar.renderWeekCalendar(getDisplayedWeekStartDateInternal());
+  ui.updateSettingsText(); // Re-apply translations if needed
 }
 
 async function handleWrapTaskTitlesChange(event) {
   ui.handleCheckboxChange(event.target);
   wrapTaskTitles = event.target.checked;
   localStorage.setItem("wrapTaskTitles", wrapTaskTitles);
-  await tasks.renderAllTasks();
+  await tasks.renderAllTasks(); // Re-render all visible tasks
 }
 
 // Start the application

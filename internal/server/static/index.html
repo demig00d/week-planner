@@ -21,7 +21,6 @@
   </head>
   <body>
     <div class="calendar-container">
-      <!-- Calendar Header -->
       <div class="calendar-header">
         <div class="month-name">
           <span class="month">Month</span>
@@ -46,19 +45,20 @@
           <div class="settings-popup-header">
             <h3 data-translate="settings">Settings</h3>
             <div class="settings-data-actions">
+              <!-- Export Button - Icon Only -->
               <button
                 id="export-db-btn"
                 class="settings-button data-button"
-                data-translate="exportDatabase"
                 title="Export Database"
+                data-translate-title="exportDatabaseTitle"
               >
                 <i class="fas fa-download"></i>
               </button>
               <label
                 for="import-db-input"
                 class="import-db-label"
-                data-translate="importDatabase"
                 title="Import Database"
+                data-translate-title="importDatabaseTitle"
               >
                 <i class="fas fa-upload"></i>
               </label>
@@ -94,15 +94,19 @@
                 Display
               </div>
               <div class="settings-option display-checkbox">
-                <label for="full-weekdays-checkbox" class="styled-checkbox">
-                  Full weekday names
+                <label class="styled-checkbox">
                   <input type="checkbox" id="full-weekdays-checkbox" />
+                  <span data-translate="fullWeekdaysHeader">
+                    Full weekday names
+                  </span>
                 </label>
               </div>
               <div class="settings-option display-checkbox">
-                <label for="wrap-task-titles-checkbox" class="styled-checkbox">
-                  Wrap task titles
+                <label class="styled-checkbox">
                   <input type="checkbox" id="wrap-task-titles-checkbox" />
+                  <span data-translate="wrapWeekTitlesHeader">
+                    Wrap task titles
+                  </span>
                 </label>
               </div>
             </div>
@@ -112,19 +116,19 @@
       <!-- Fuzzy Search Popup -->
       <div id="fuzzy-search-popup" class="fuzzy-search-popup">
         <div>
-          <!-- Inner container for fuzzy search content -->
           <input
             autocomplete="off"
             type="text"
             id="fuzzy-search-input"
-            placeholder="Search tasks..."
+            placeholder=""
+            data-translate="searchPlaceholder"
           />
           <ul id="fuzzy-search-results"></ul>
         </div>
       </div>
       <!-- Calendar Grid -->
       <div class="calendar">
-        <!-- Row 1: Inbox + Monday to Wednesday -->
+        <!-- Rows remain the same -->
         <div class="calendar-row" id="row1">
           <div id="inbox" class="inbox">
             <div class="inbox-header">📦 Inbox</div>
@@ -148,8 +152,6 @@
             </div>
           </div>
         </div>
-
-        <!-- Row 2: Thursday to Sunday -->
         <div class="calendar-row" id="row2">
           <div id="thursday" class="day">
             <div class="day-header">
@@ -179,11 +181,11 @@
       </div>
     </div>
 
-    <!-- Task Details Popup -->
+    <!-- Task Details Popup Overlay -->
     <div id="task-details-popup-overlay" class="task-details-popup-overlay">
       <div id="task-details-popup" class="task-details-popup">
         <div class="task-popup-top-bar">
-          <!-- Left side: Calendar and Color Swatches -->
+          <!-- Left: Date & Color -->
           <div class="task-actions-group task-actions-group-left">
             <div class="task-details-header">
               <div
@@ -191,6 +193,7 @@
                 id="task-details-date"
                 tabindex="0"
                 title="Pick a date"
+                data-selected-date=""
               >
                 Pick a date
                 <i class="fas fa-calendar-alt task-details-date-icon"></i>
@@ -222,7 +225,7 @@
                   title="Orange"
                 ></button>
                 <button
-                  class="color-swatch selected-color"
+                  class="color-swatch"
                   data-color="no-color"
                   title="Reset Color"
                 >
@@ -231,12 +234,14 @@
               </div>
             </div>
           </div>
+          <!-- Center: Actions -->
           <div class="task-actions-group task-actions-group-center">
             <div class="task-actions-group task-actions-group-done-button">
               <button
                 id="mark-done-task-details"
                 class="done-button"
                 title="Mark as done"
+                data-completed="0"
               >
                 <i class="far fa-check-circle"></i>
               </button>
@@ -260,7 +265,7 @@
             <button
               id="reminder-task-details"
               class="reminder-button"
-              title="Reminder set"
+              title="Set Reminder"
               style="display: none"
             >
               <i class="fas fa-bell"></i>
@@ -273,7 +278,7 @@
               <i class="fas fa-trash-alt"></i>
             </button>
           </div>
-          <!-- Right side: Close Button -->
+          <!-- Right: Close -->
           <div class="task-actions-group task-actions-group-right">
             <button
               id="close-task-details-popup"
@@ -284,22 +289,59 @@
             </button>
           </div>
         </div>
-        <h2 id="task-details-title">Task Title</h2>
+
+        <!-- Title Input -->
+        <input
+          type="text"
+          id="task-details-title"
+          class="task-title-input"
+          placeholder="Task Title"
+          aria-label="Task Title"
+        />
+
         <div class="task-details-popup-content">
-          <div id="recurrence-rule-container" class="settings-option">
-            <label for="recurrence-rule-select" data-translate="recurrence"
-              >Recurrence</label
-            >
-            <select id="recurrence-rule-select" class="language-select">
-              <option value="" data-translate="recurrenceNone">None</option>
-              <option value="daily" data-translate="recurrenceDaily">
-                Daily
-              </option>
-              <option value="weekly" data-translate="recurrenceWeekly">
-                Weekly
-              </option>
-            </select>
+          <!-- Recurrence Settings Row -->
+          <div id="recurrence-settings-container" style="display: none">
+            <div class="recurrence-row">
+              <div
+                class="recurrence-control-group"
+                id="recurrence-controls"
+                style="display: none"
+              >
+                <!-- Initially hidden -->
+                <label data-translate="recurrenceEvery">Every</label>
+                <input
+                  type="number"
+                  id="recurrence-interval-input"
+                  value="1"
+                  min="1"
+                  class="recurrence-control themed-input"
+                  aria-label="Recurrence interval"
+                />
+                <select
+                  id="recurrence-period-select"
+                  class="recurrence-control themed-select"
+                  aria-label="Recurrence period"
+                >
+                  <option value="daily" data-translate="recurrenceDays">
+                    Days
+                  </option>
+                  <option value="weekly" data-translate="recurrenceWeeks">
+                    Weeks
+                  </option>
+                  <option value="monthly" data-translate="recurrenceMonths">
+                    Months
+                  </option>
+                  <option value="yearly" data-translate="recurrenceYears">
+                    Years
+                  </option>
+                </select>
+              </div>
+            </div>
+            <div id="recurrence-preview" class="recurrence-preview-text"></div>
           </div>
+
+          <!-- Description Area -->
           <label for="task-description-textarea" data-translate="description">
             Description:
             <button
@@ -307,21 +349,23 @@
               class="description-mode-button"
               title="Toggle Description Mode"
             >
-              <i id="description-mode-icon" class="fas fa-book"></i>
+              <i id="description-mode-icon" class="fas fa-book-open"></i>
             </button>
           </label>
           <div
             id="task-description-rendered"
             class="task-description-rendered"
+            style="display: none"
           ></div>
           <textarea
             id="task-description-textarea"
             name="task-description"
             style="display: block"
-            for="task-description-textarea"
+            aria-labelledby="task-description-label"
           ></textarea>
         </div>
-        <!-- Date Picker Container -->
+
+        <!-- Date Picker -->
         <div id="date-picker-container" class="date-picker-container">
           <div class="date-picker-header">
             <button
@@ -343,15 +387,16 @@
               <i class="fas fa-chevron-right"></i>
             </button>
           </div>
-          <div class="date-picker-grid" id="date-picker-grid">
-            <!-- Day names and days will be rendered here by JavaScript -->
-          </div>
+          <div class="date-picker-grid" id="date-picker-grid"></div>
           <div class="date-picker-actions">
             <button
               class="date-picker-reset-date"
               id="date-picker-reset-date"
-              title="Set Date"
-            ></button>
+              title="Remove Due Date"
+              data-translate="removeDate"
+            >
+              Remove Date
+            </button>
           </div>
         </div>
       </div>

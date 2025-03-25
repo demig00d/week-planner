@@ -1,15 +1,12 @@
 ::-webkit-scrollbar {
   width: 8px;
 }
-
 ::-webkit-scrollbar-track {
   background: var(--bg-color);
 }
-
 ::-webkit-scrollbar-thumb {
   background-color: var(--day-border);
 }
-
 ::-webkit-scrollbar-thumb:hover {
   background-color: #999;
 }
@@ -27,16 +24,17 @@ body {
     color 0.3s;
 }
 
+/* --- Theme Variables --- */
 :root {
+  /* Light Theme Defaults */
   --bg-color: #fafafa;
   --text-color: #000000;
   --day-border: #ddd;
   --inbox-bg-light: #f0f0f0;
-  --inbox-border: #f5f5f5;
   --event-text: #000000;
   --task-popup-icons-color: #aaa;
-  --input-border: #f0f0f0;
-  --input-focus-border: #007bff;
+  --input-border: #f0f0f0; /* Might be overridden by task-border-color */
+  --input-focus-border: #007bff; /* Kept for selects/other inputs */
   --drag-opacity: 0.7;
   --drag-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   --highlight-text-color: #007bff;
@@ -51,14 +49,16 @@ body {
   --task-border-color: #ccc;
   --link-color-light: #007bff;
 
+  /* Dark Theme Overrides (used when body.dark-theme) */
   --task-color-blue-dark: #000b1f;
   --task-color-green-dark: #001f1f;
   --task-color-yellow-dark: #1f1f1f;
   --task-color-pink-dark: #2a1f2a;
   --task-color-orange-dark: #1f1f0a;
   --link-color-dark: #66a3ff;
+  --input-focus-border-dark: #66a3ff; /* Keep for selects/other inputs */
 
-  /* Fuzzy Search Highlight Colors - Light Theme */
+  /* Fuzzy Search Highlights - Light */
   --fuzzy-highlight-blue-light: #002b80;
   --fuzzy-highlight-green-light: #006666;
   --fuzzy-highlight-yellow-light: #666600;
@@ -70,27 +70,22 @@ body.dark-theme {
   --bg-color: #121212;
   --text-color: #ffffff;
   --day-border: #333;
-  --inbox-bg-dark: #222;
-  --inbox-border: #0a0a0a;
+  --inbox-bg-dark: #222; /* Replaces inbox-bg-light */
   --event-text: #eee;
   --task-popup-icons-color: #888;
-  --input-border: #0a0a0a;
-  --input-focus-border: #66a3ff;
+  --input-border: #0a0a0a; /* Replaces input-border */
+  --input-focus-border: var(
+    --input-focus-border-dark
+  ); /* Use dark theme focus color */
   --drag-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
   --highlight-text-color: #66a3ff;
   --dim-text-color: #aaa;
   --dim-task-text-color: #999;
   --dim-highlight-text-color: #425b8b;
-
-  --task-color-blue-dark: #000b1f;
-  --task-color-green-dark: #001f1f;
-  --task-color-yellow-dark: #1f1f1f;
-  --task-color-pink-dark: #2a1f2a;
-  --task-color-orange-dark: #1f1f0a;
   --task-border-color: #444;
   --link-color-dark: #66a3ff;
 
-  /* Fuzzy Search Highlight Colors - Dark Theme */
+  /* Fuzzy Search Highlights - Dark */
   --fuzzy-highlight-blue-dark: #90c2d9;
   --fuzzy-highlight-green-dark: #a5c3a6;
   --fuzzy-highlight-yellow-dark: #e0dfa1;
@@ -98,6 +93,7 @@ body.dark-theme {
   --fuzzy-highlight-orange-dark: #dca960;
 }
 
+/* --- Theme Inheritance for Popups and Controls --- */
 .task-details-popup,
 .settings-popup,
 .fuzzy-search-popup > div,
@@ -105,35 +101,98 @@ body.dark-theme {
   border: 1px solid var(--task-border-color) !important;
   background-color: var(--bg-color);
   color: var(--text-color);
+  border-radius: 0; /* REMOVED roundness */
 }
 
-.task-details-popup h2,
 .date-picker-header {
   border-bottom: 1px solid var(--task-border-color) !important;
 }
 
-.task-details-popup textarea,
-.task-details-popup input[type="color"],
-.color-swatches .color-swatch,
-.task-details-popup-content .task-description-rendered,
+/* General Inputs/Selects/Textarea in Popups (Excluding Title) */
+.task-details-popup textarea, /* Description Edit */
+.task-details-popup-content .task-description-rendered, /* Description View */
 .fuzzy-search-popup input,
-.settings-option select {
+.settings-option select, /* Applies to theme/lang select in settings */
+.themed-select, /* Applies to recurrence period */
+.themed-input, /* Applies to recurrence interval */
+.language-select, /* Include language select in settings */
+.task-details-date /* Include task date picker trigger */ {
   border: 1px solid var(--task-border-color) !important;
   background-color: transparent;
   color: var(--text-color);
+  border-radius: 0;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Title Input - Specific Styling (Bottom Border Only) */
+.task-title-input {
+  font-size: 1.2em; /* Match h2 */
+  font-weight: bold;
+  width: 100%;
+  padding: 8px 0 8px 0; /* Adjust padding, focus on bottom */
+  margin: 0 0 20px 0; /* Add bottom margin like h2 had */
+  box-sizing: border-box;
+  background-color: transparent;
+  color: var(--text-color);
+  border: none !important; /* Remove all borders */
+  border-bottom: 1px solid var(--task-border-color) !important; /* Add only bottom border */
+  border-radius: 0;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Description Textarea/Rendered - Specific Styling */
+.task-details-popup textarea,
+.task-details-popup-content .task-description-rendered {
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+  /* Border inherited from above */
+}
+.task-details-popup textarea {
+  resize: vertical;
+  min-height: 50px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* Focus States - Selectively Apply Highlight */
+
+/* Apply highlight ONLY to specified controls */
+.fuzzy-search-popup input:focus,
+.settings-option select:focus,
+.themed-select:focus,
+.themed-input:focus,
+.language-select:focus,
+.task-details-date:focus {
+  border-color: var(--input-focus-border) !important;
+  outline: none;
+  box-shadow: 0 0 0 1px var(--input-focus-border);
+}
+
+/* REMOVE specific focus highlight from Title, Description Edit/View */
+.task-title-input:focus,
+.task-details-popup textarea:focus,
+.task-details-popup-content .task-description-rendered:focus {
+  /* Keep existing border (bottom only for title, full for others) */
+  border-color: var(--task-border-color) !important;
+  /* Specifically keep bottom border color for title on focus */
+  border-bottom-color: var(--task-border-color) !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
 .color-swatch[data-color="no-color"] i {
   color: var(--task-popup-icons-color);
 }
 
+/* --- Calendar Layout --- */
 .calendar-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
 }
-
-/* Calendar Header */
 .calendar-header {
   display: flex;
   justify-content: space-between;
@@ -157,37 +216,48 @@ body.dark-theme {
   font-size: 1.2em;
 }
 
+/* Buttons and Controls in Header */
 .settings-button,
-.description-mode-button {
+.description-mode-button,
+.search-button {
   background: none;
   border: none;
   color: var(--text-color);
-  font-size: 1em;
   cursor: pointer;
   margin-left: 10px;
   padding: 8px 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 1em;
+}
+.search-button {
+  font-size: 1.2em;
 }
 
 .settings-button i,
-.description-mode-button i {
+.description-mode-button i,
+.search-button i {
   pointer-events: none;
 }
 
 .language-select {
+  /* Select in Settings - Border/Focus handled above */
   padding: 8px;
   margin-left: 0;
-  border: 1px solid var(--text-color);
   background-color: transparent;
   color: var(--text-color);
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
   cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='rgba(136, 136, 136, 1)'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 10px 10px;
+  padding-right: 25px;
+  border-radius: 0;
 }
-
 .language-select option {
   background-color: var(--bg-color);
   color: var(--text-color);
@@ -224,7 +294,6 @@ body.dark-theme {
 .inbox {
   background-color: var(--inbox-bg-light);
 }
-
 body.dark-theme .inbox {
   background-color: var(--inbox-bg-dark);
 }
@@ -244,11 +313,12 @@ body.dark-theme .inbox {
   background-color: var(--bg-color);
   z-index: 2;
 }
-
+.inbox-header {
+  text-align: left;
+}
 .day-header.today-highlight {
   color: var(--highlight-text-color);
 }
-
 .month-name {
   font-size: 1em;
   font-weight: bold;
@@ -286,6 +356,7 @@ body.dark-theme .inbox {
   color: var(--dim-highlight-text-color);
 }
 
+/* --- Task Item Styling --- */
 .event {
   color: var(--event-text);
   padding: 12px 8px;
@@ -297,6 +368,7 @@ body.dark-theme .inbox {
   flex-shrink: 0;
   border-bottom: 1px solid var(--task-border-color);
   background-color: transparent;
+  position: relative; /* Needed for outline-offset */
 }
 
 .event[data-task-color="blue"] {
@@ -305,28 +377,24 @@ body.dark-theme .inbox {
 body.dark-theme .event[data-task-color="blue"] {
   background-color: var(--task-color-blue-dark);
 }
-
 .event[data-task-color="green"] {
   background-color: var(--task-color-green-light);
 }
 body.dark-theme .event[data-task-color="green"] {
   background-color: var(--task-color-green-dark);
 }
-
 .event[data-task-color="yellow"] {
   background-color: var(--task-color-yellow-light);
 }
 body.dark-theme .event[data-task-color="yellow"] {
   background-color: var(--task-color-yellow-dark);
 }
-
 .event[data-task-color="pink"] {
   background-color: var(--task-color-pink-light);
 }
 body.dark-theme .event[data-task-color="pink"] {
   background-color: var(--task-color-pink-dark);
 }
-
 .event[data-task-color="orange"] {
   background-color: var(--task-color-orange-light);
 }
@@ -376,7 +444,7 @@ body.dark-theme .event[data-task-color="orange"] {
   z-index: 1;
 }
 
-/* Description Icon */
+/* Icons and Action Buttons inside Task Items */
 .description-icon,
 .task-progress {
   font-size: 0.9em;
@@ -392,6 +460,7 @@ body.dark-theme .event[data-task-color="orange"] {
 }
 
 .action-buttons {
+  /* Container for done/undone buttons */
   display: flex;
   gap: 4px;
   opacity: 0;
@@ -403,7 +472,7 @@ body.dark-theme .event[data-task-color="orange"] {
   z-index: 0;
 }
 
-/* Hover States */
+/* Hover States for Task Items */
 .event:hover .description-icon,
 .event:hover .task-progress {
   opacity: 0;
@@ -430,7 +499,9 @@ body.dark-theme .event[data-task-color="orange"] {
 .undone-button i {
   color: grey;
 }
+
 .link-button {
+  /* Copy link button in task item (if it exists) */
   background: none;
   border: none;
   font-size: 1em;
@@ -444,6 +515,7 @@ body.dark-theme .event[data-task-color="orange"] {
   color: var(--task-popup-icons-color);
 }
 
+/* --- New Task Input Form --- */
 .new-task-form {
   margin-top: 5px;
   flex-shrink: 0;
@@ -467,14 +539,7 @@ body.dark-theme .event[data-task-color="orange"] {
   box-sizing: border-box;
 }
 
-.inbox-header {
-  text-align: left;
-  font-weight: bold;
-  margin-bottom: 10px;
-  flex-shrink: 0;
-}
-
-/* Settings Popup */
+/* --- Settings Popup --- */
 .settings-popup {
   position: absolute;
   top: 60px;
@@ -510,7 +575,6 @@ body.dark-theme .event[data-task-color="orange"] {
   border: none;
   padding: 8px;
   margin: 0;
-  border-radius: 4px;
   background-color: transparent;
   color: var(--text-color);
   cursor: pointer;
@@ -518,13 +582,13 @@ body.dark-theme .event[data-task-color="orange"] {
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 0; /* REMOVED roundness */
 }
 
 .settings-data-actions button.data-button:hover,
 .settings-data-actions label.import-db-label:hover {
   background-color: var(--inbox-bg-light);
 }
-
 body.dark-theme .settings-data-actions button.data-button:hover,
 body.dark-theme .settings-data-actions label.import-db-label:hover {
   background-color: var(--inbox-bg-dark);
@@ -555,18 +619,12 @@ body.dark-theme .settings-data-actions label.import-db-label:hover {
 }
 
 .settings-option select {
+  /* Applies to theme/lang select in settings */
   width: 100%;
   padding: 8px;
   box-sizing: border-box;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
   cursor: pointer;
-}
-
-.settings-option select:focus {
-  border: 1px solid var(--input-focus-border);
-  outline: none;
+  /* Border/Theme inherited */
 }
 
 .settings-options-header {
@@ -575,6 +633,7 @@ body.dark-theme .settings-data-actions label.import-db-label:hover {
   display: block;
 }
 
+/* Settings Checkboxes */
 .display-checkbox label.styled-checkbox {
   display: flex;
   align-items: center;
@@ -584,9 +643,6 @@ body.dark-theme .settings-data-actions label.import-db-label:hover {
   margin-bottom: 0;
   position: relative;
   padding-left: 30px;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
   user-select: none;
   min-height: 20px;
   font-size: 0.9em;
@@ -607,8 +663,8 @@ body.dark-theme .settings-data-actions label.import-db-label:hover {
   display: inline-block;
   width: 16px;
   height: 16px;
-  border: 2px solid var(--day-border);
-  border-radius: 50%;
+  border: 1.5px solid var(--day-border);
+  border-radius: 50%; /* Keep checkboxes round */
   background-color: transparent;
   transition:
     background-color 0.2s ease,
@@ -618,7 +674,6 @@ body.dark-theme .settings-data-actions label.import-db-label:hover {
   top: 50%;
   transform: translateY(-50%);
   box-sizing: border-box;
-  border-width: 1.5px;
 }
 
 .display-checkbox label.styled-checkbox.checked::before {
@@ -639,47 +694,7 @@ body.dark-theme .settings-data-actions label.import-db-label:hover {
   z-index: 1;
 }
 
-@media (max-width: 768px) {
-  body {
-    height: auto;
-    overflow: visible;
-  }
-  .calendar-container {
-    height: auto;
-  }
-  .calendar {
-    flex-direction: column;
-    overflow-y: auto;
-  }
-
-  .calendar-row {
-    flex-direction: column;
-    height: auto;
-  }
-
-  .day,
-  .inbox {
-    width: 100%;
-    margin-bottom: 10px;
-    overflow-y: auto;
-    max-height: none;
-  }
-
-  .settings-popup {
-    top: 50px;
-    right: 10px;
-    width: 90%;
-    max-width: 500px;
-  }
-  .settings-columns-container {
-    flex-direction: column;
-    gap: 0;
-  }
-  .settings-column {
-    margin-bottom: 20px;
-  }
-}
-
+/* --- Task Details Popup --- */
 .task-details-popup-overlay {
   position: fixed;
   top: 0;
@@ -706,24 +721,23 @@ body.dark-theme .settings-data-actions label.import-db-label:hover {
   margin-bottom: 20px;
   overflow: hidden;
   padding: 20px;
+  /* Theme inherited */
 }
 
-.task-details-popup h2 {
-  margin-top: 0;
-  margin-bottom: 20px;
-  padding-bottom: 0;
-  text-align: center;
-  flex-shrink: 0;
-}
-
+/* Task Details Top Bar */
 .task-popup-top-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 10px;
 }
-
+.task-actions-group {
+  display: flex;
+  align-items: center;
+}
 .task-actions-group-left,
 .task-actions-group-center,
 .task-actions-group-done-button,
@@ -734,42 +748,64 @@ body.dark-theme .settings-data-actions label.import-db-label:hover {
 }
 
 .task-details-header {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 0;
-}
-
-.task-actions-group-center {
-  margin-left: 10px;
+  /* Contains Date + Colors */
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-bottom: 0;
+  flex-wrap: wrap;
+}
+.task-actions-group-center {
+  /* Contains Done, Link, Recur, Reminder, Delete */
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  flex-grow: 1;
+  order: 2;
+}
+.task-actions-group-right {
+  /* Contains Close */
+  order: 3;
+}
+.task-actions-group-left {
+  order: 1;
 }
 
-.task-actions-group-done-button {
-  margin-right: 0;
+@media (max-width: 500px) {
+  /* Adjust breakpoint as needed */
+  .task-popup-top-bar {
+    justify-content: center;
+  }
+  .task-actions-group-center {
+    order: 1;
+    width: 100%;
+    justify-content: space-around;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .task-actions-group-left {
+    order: 2;
+    margin-top: 10px;
+  }
+  .task-actions-group-right {
+    order: 3;
+    margin-left: auto;
+  }
 }
 
-.task-actions-group-link-button {
-  margin-right: 0;
-  position: relative;
-}
-
+/* Task Details Date Input */
 .task-details-date {
   padding: 6px 8px;
   cursor: pointer;
   position: relative;
-  margin-right: 8px;
+  margin-right: 0;
   white-space: nowrap;
   font-size: 0.9em;
-  margin-bottom: 5px;
-  border: 1px solid var(--task-border-color);
-}
-
-.task-details-date:focus {
-  outline: none;
-  border: 1px solid var(--task-border-color);
+  /* border: 1px solid var(--task-border-color); - Inherited */
+  border-radius: 0;
 }
 
 .task-details-date-icon {
@@ -782,11 +818,12 @@ body.dark-theme .settings-data-actions label.import-db-label:hover {
   font-size: 0.9em;
 }
 
+/* Task Details Content Area */
 .task-details-popup-content {
   margin-bottom: 5px;
   display: flex;
   flex-direction: column;
-  margin-top: 15px;
+  margin-top: 15px; /* Was 15px, adjust if needed after title change */
   flex-grow: 1;
   overflow-y: auto;
   min-height: 0;
@@ -800,13 +837,14 @@ body.dark-theme .settings-data-actions label.import-db-label:hover {
   font-weight: bold;
 }
 
+/* Description Textarea/Rendered - Specific Styling (Inherits border) */
 .task-details-popup textarea,
 .task-details-popup-content .task-description-rendered {
   width: 100%;
   padding: 8px;
   box-sizing: border-box;
+  /* Border/Focus handled by general rules */
 }
-
 .task-details-popup textarea {
   resize: vertical;
   min-height: 50px;
@@ -814,81 +852,70 @@ body.dark-theme .settings-data-actions label.import-db-label:hover {
   overflow-y: auto;
 }
 
-.task-details-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.task-details-actions button.reset-color-btn {
-  background: none;
-  border: none;
-  color: var(--text-color);
-  font-size: 1em;
-  cursor: pointer;
-  padding: 8px;
-  opacity: 0.6;
-  transition: opacity 0.2s ease-in-out;
-}
-
-.task-details-actions button i {
-  font-size: 1.2em;
-}
-
+/* Task Details Action Buttons (Center/Right) */
 .close-popup-btn {
   position: static;
   background: none;
   border: none;
   color: var(--text-color);
-  font-size: 1.2em;
+  font-size: 1.1em; /* Slightly smaller */
   cursor: pointer;
   opacity: 0.8;
   transition: opacity 0.2s ease-in-out;
-  margin-left: 0;
+  padding: 0;
 }
 
 .close-popup-btn:hover {
   opacity: 1;
 }
 
-.task-details-popup .delete-button {
+.task-details-popup .delete-button,
+.task-details-popup .recurring-button,
+.task-details-popup .reminder-button {
   background-color: transparent;
   color: var(--task-popup-icons-color);
   border: none;
   padding: 0;
   cursor: pointer;
-  font-size: 1em;
-  transition:
-    background-color 0.2s ease-in-out,
-    color 0.2s ease-in-out;
+  font-size: 0.9em; /* Smaller base size */
   opacity: 1 !important;
-  margin-left: 0;
   white-space: nowrap;
-  margin-bottom: 5px;
-  margin-right: 0;
-  margin-top: 5px;
+  transition: color 0.2s ease-in-out;
 }
-
 .task-details-popup .delete-button:hover {
-  background-color: transparent;
   color: #ff4d4d;
 }
-
-.task-details-popup .delete-button i {
-  color: inherit !important;
-  margin-right: 0;
+.task-details-popup .recurring-button:hover,
+.task-details-popup .reminder-button:hover {
+  color: var(--highlight-text-color);
 }
 
-/* Color Swatches Styling */
+/* Task Details Popup Icons - Center Group Uniform Size */
+.task-actions-group-center button i {
+  /* Target all icons in center group buttons */
+  font-size: 1em !important; /* Smaller uniform size */
+  vertical-align: middle;
+  line-height: 1;
+}
+/* Adjust done/undone button icons size if needed */
+.task-actions-group-done-button button i {
+  font-size: 1.1em !important; /* Example: Keep check slightly larger or same */
+}
+/* Adjust link button size if needed */
+.task-actions-group-link-button button i {
+  font-size: 1em !important; /* Example */
+}
+
+/* Color Swatches */
 .task-details-header .color-swatches {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 0;
   flex-wrap: wrap;
 }
 
 .color-swatch {
+  /* Keep color swatches round */
   border: 1px solid var(--task-border-color);
   width: 24px;
   height: 24px;
@@ -901,7 +928,6 @@ body.dark-theme .settings-data-actions label.import-db-label:hover {
   -webkit-appearance: none;
   -moz-appearance: none;
   background-color: transparent;
-  margin-bottom: 5px;
 }
 
 .color-swatch.blue-swatch {
@@ -910,28 +936,24 @@ body.dark-theme .settings-data-actions label.import-db-label:hover {
 body.dark-theme .color-swatch.blue-swatch {
   background-color: var(--task-color-blue-dark);
 }
-
 .color-swatch.green-swatch {
   background-color: var(--task-color-green-light);
 }
 body.dark-theme .color-swatch.green-swatch {
   background-color: var(--task-color-green-dark);
 }
-
 .color-swatch.yellow-swatch {
   background-color: var(--task-color-yellow-light);
 }
 body.dark-theme .color-swatch.yellow-swatch {
   background-color: var(--task-color-yellow-dark);
 }
-
 .color-swatch.pink-swatch {
   background-color: var(--task-color-pink-light);
 }
 body.dark-theme .color-swatch.pink-swatch {
   background-color: var(--task-color-pink-dark);
 }
-
 .color-swatch.orange-swatch {
   background-color: var(--task-color-orange-light);
 }
@@ -942,13 +964,14 @@ body.dark-theme .color-swatch.orange-swatch {
 .color-swatch i {
   font-size: 0.8em;
   position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
 }
-
-.color-swatch.selected-color[data-color="no-color"] i {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+.color-swatch[data-color="no-color"] i {
+  color: var(--task-popup-icons-color);
 }
 
 .color-swatch.selected-color::after {
@@ -958,82 +981,50 @@ body.dark-theme .color-swatch.orange-swatch {
   left: -3px;
   right: -3px;
   bottom: -3px;
-  border-radius: 24px;
+  border-radius: 50%;
   border: 1px solid var(--input-focus-border);
   outline: 1px solid var(--highlight-text-color);
   box-shadow: 0 0 0 2px var(--bg-color);
   pointer-events: none;
 }
-
-.color-swatch.selected-color:focus::after,
-.color-swatch.selected-color:hover::after {
-  border: 1px solid var(--input-focus-border);
-  outline: 1px solid var(--highlight-text-color);
-  box-shadow: 0 0 0 2px var(--bg-color);
-  pointer-events: none;
-}
-
 .color-swatch:focus {
+  /* Keep focus for swatches separate */
   outline: none;
 }
-
+.color-swatch:focus-visible::after {
+  /* Add visual cue for keyboard focus on swatches */
+  border-width: 2px;
+}
+/* Editable Titles (Inbox Header) - Customize focus */
 .inbox-title-input {
   width: auto;
-  max-width: calc(100% - 18px);
-  padding: 8px;
-  border: none;
+  max-width: 100%;
+  padding: 8px; /* Ensure consistent padding */
   box-sizing: border-box;
   background-color: transparent;
   color: var(--text-color);
+  font-weight: bold;
+  border-radius: 0;
+  border: 1px solid transparent; /* Transparent border initially */
   font-size: 1em;
-  outline: none;
   text-align: left;
-  font-weight: bold;
-  flex-grow: 0;
-  white-space: nowrap;
+  height: auto; /* Prevent fixed height interfering */
+  line-height: normal; /* Ensure line height doesn't cause jump */
+  /* Explicitly remove default browser focus styles */
+  outline: none !important;
+  box-shadow: none !important;
+}
+.inbox-title-input:hover {
+  border-color: var(--day-border) !important; /* Subtle border on hover */
+}
+.inbox-title-input:focus {
+  border-color: var(
+    --input-focus-border
+  ) !important; /* Use standard focus border color */
+  /* Keep outline and box-shadow removed (from base rule) to prevent blue glow */
 }
 
-.task-title-input {
-  width: 100%;
-  padding: 8px;
-  border: none;
-  box-sizing: border-box;
-  background-color: transparent;
-  color: var(--text-color);
-  font-size: 1.2em;
-  outline: none;
-  font-weight: bold;
-}
-
-.task-details-popup textarea:focus {
-  border: 1px solid var(--input-focus-border);
-  outline: none;
-}
-
-.color-swatches {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.search-button {
-  background: none;
-  border: none;
-  color: var(--text-color);
-  font-size: 1.2em;
-  cursor: pointer;
-  margin-left: 10px;
-  padding: 8px 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.search-button i {
-  pointer-events: none;
-}
-
+/* --- Fuzzy Search Popup --- */
 .fuzzy-search-popup {
   position: fixed;
   top: 0;
@@ -1048,29 +1039,22 @@ body.dark-theme .color-swatch.orange-swatch {
   padding-top: 100px;
   box-sizing: border-box;
 }
-
-/* Style the inner container to hold the input and results, and give it the original popup look */
 .fuzzy-search-popup > div {
-  background-color: var(--bg-color);
-  border: 1px solid var(--task-border-color) !important;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   width: 300px;
   padding: 10px;
   position: relative;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  border-radius: 0;
+  /* Theme inherited */
 }
-
 .fuzzy-search-popup input {
   width: calc(100% - 20px);
   padding: 8px 10px;
   margin: 0 auto 10px;
   display: block;
   box-sizing: border-box;
-  border: 1px solid var(--task-border-color) !important;
-}
-
-.fuzzy-search-popup input:focus {
-  border: 1px solid var(--input-focus-border);
-  outline: none;
+  border-radius: 0;
+  /* Border/Theme inherited */
 }
 
 .fuzzy-search-popup ul {
@@ -1079,10 +1063,6 @@ body.dark-theme .color-swatch.orange-swatch {
   margin: 0;
   overflow-y: auto;
   max-height: 420px;
-}
-
-.fuzzy-search-popup ul.scrollable {
-  border-right: 1px solid var(--day-border);
 }
 
 .fuzzy-search-popup li {
@@ -1101,7 +1081,6 @@ body.dark-theme .color-swatch.orange-swatch {
 .fuzzy-search-popup li:hover {
   background-color: var(--inbox-bg-light);
 }
-
 body.dark-theme .fuzzy-search-popup li:hover {
   background-color: var(--inbox-bg-dark);
 }
@@ -1113,42 +1092,6 @@ body.dark-theme .fuzzy-search-popup li:hover {
   white-space: nowrap;
   display: block;
 }
-
-.fuzzy-search-task-title.blue-title-highlight {
-  color: var(--fuzzy-highlight-blue-light);
-}
-body.dark-theme .fuzzy-search-task-title.blue-title-highlight {
-  color: var(--fuzzy-highlight-blue-dark);
-}
-
-.fuzzy-search-task-title.green-title-highlight {
-  color: var(--fuzzy-highlight-green-light);
-}
-body.dark-theme .fuzzy-search-task-title.green-title-highlight {
-  color: var(--fuzzy-highlight-green-dark);
-}
-
-.fuzzy-search-task-title.yellow-title-highlight {
-  color: var(--fuzzy-highlight-yellow-light);
-}
-body.dark-theme .fuzzy-search-task-title.yellow-title-highlight {
-  color: var(--fuzzy-highlight-yellow-dark);
-}
-
-.fuzzy-search-task-title.pink-title-highlight {
-  color: var(--fuzzy-highlight-pink-light);
-}
-body.dark-theme .fuzzy-search-task-title.pink-title-highlight {
-  color: var(--fuzzy-highlight-pink-dark);
-}
-
-.fuzzy-search-task-title.orange-title-highlight {
-  color: var(--fuzzy-highlight-orange-light);
-}
-body.dark-theme .fuzzy-search-task-title.orange-title-highlight {
-  color: var(--fuzzy-highlight-orange-dark);
-}
-
 .fuzzy-search-task-date {
   font-size: 0.9em;
   color: var(--dim-text-color);
@@ -1156,6 +1099,38 @@ body.dark-theme .fuzzy-search-task-title.orange-title-highlight {
   text-overflow: ellipsis;
   white-space: nowrap;
   display: block;
+}
+
+/* Fuzzy Search Title Color Highlights */
+.fuzzy-search-task-title.blue-title-highlight {
+  color: var(--fuzzy-highlight-blue-light);
+}
+body.dark-theme .fuzzy-search-task-title.blue-title-highlight {
+  color: var(--fuzzy-highlight-blue-dark);
+}
+.fuzzy-search-task-title.green-title-highlight {
+  color: var(--fuzzy-highlight-green-light);
+}
+body.dark-theme .fuzzy-search-task-title.green-title-highlight {
+  color: var(--fuzzy-highlight-green-dark);
+}
+.fuzzy-search-task-title.yellow-title-highlight {
+  color: var(--fuzzy-highlight-yellow-light);
+}
+body.dark-theme .fuzzy-search-task-title.yellow-title-highlight {
+  color: var(--fuzzy-highlight-yellow-dark);
+}
+.fuzzy-search-task-title.pink-title-highlight {
+  color: var(--fuzzy-highlight-pink-light);
+}
+body.dark-theme .fuzzy-search-task-title.pink-title-highlight {
+  color: var(--fuzzy-highlight-pink-dark);
+}
+.fuzzy-search-task-title.orange-title-highlight {
+  color: var(--fuzzy-highlight-orange-light);
+}
+body.dark-theme .fuzzy-search-task-title.orange-title-highlight {
+  color: var(--fuzzy-highlight-orange-dark);
 }
 
 .fuzzy-search-popup li.completed-task .fuzzy-search-task-title::before {
@@ -1173,7 +1148,7 @@ body.dark-theme .fuzzy-search-task-title.orange-title-highlight {
   text-indent: 0;
 }
 
-/* Custom Date Picker Styles */
+/* --- Custom Date Picker --- */
 .date-picker-container {
   position: fixed;
   z-index: 1100;
@@ -1181,6 +1156,8 @@ body.dark-theme .fuzzy-search-task-title.orange-title-highlight {
   display: none;
   top: auto;
   left: auto;
+  border-radius: 0;
+  /* Theme inherited */
 }
 
 .date-picker-header {
@@ -1201,10 +1178,14 @@ body.dark-theme .fuzzy-search-task-title.orange-title-highlight {
   cursor: pointer;
   padding: 4px 8px;
 }
+.date-picker-nav-button:hover {
+  color: var(--highlight-text-color);
+}
 
 .date-picker-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  padding: 0 8px 8px 8px;
 }
 
 .date-picker-day-name,
@@ -1212,20 +1193,17 @@ body.dark-theme .fuzzy-search-task-title.orange-title-highlight {
   padding: 8px;
   text-align: center;
   cursor: pointer;
+  border-radius: 0;
 }
 
 .date-picker-day-name {
   font-weight: bold;
   color: var(--dim-text-color);
+  cursor: default;
 }
-
 .date-picker-day {
   position: relative;
-  padding: 8px;
-  text-align: center;
-  cursor: pointer;
 }
-
 .date-picker-day.current-day::before {
   content: "";
   position: absolute;
@@ -1236,47 +1214,61 @@ body.dark-theme .fuzzy-search-task-title.orange-title-highlight {
   background-color: var(--highlight-text-color);
   opacity: 0.2;
   z-index: -1;
+  border-radius: inherit;
 }
 
 .date-picker-day:hover,
 .date-picker-day.selected {
   background-color: var(--inbox-bg-light);
 }
-
 body.dark-theme .date-picker-day:hover,
 body.dark-theme .date-picker-day.selected {
   background-color: var(--inbox-bg-dark);
+}
+.date-picker-day.selected {
+  font-weight: bold;
+  color: var(--highlight-text-color);
 }
 
 .date-picker-day.inactive {
   color: var(--dim-text-color);
   cursor: default;
 }
-
 .date-picker-day.inactive:hover {
   background-color: transparent;
 }
+.date-picker-actions {
+  padding: 0 8px 8px 8px;
+  text-align: right;
+  border-top: 1px solid var(--task-border-color);
+  padding-top: 8px;
+  margin-top: 4px;
+}
+.date-picker-reset-date {
+  background: none;
+  border: none;
+  color: var(--highlight-text-color);
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 0.9em;
+}
+.date-picker-reset-date:hover {
+  text-decoration: underline;
+}
 
-/* Markdown Rendering Styles */
+/* --- Markdown Rendering Styles --- */
 .task-details-popup-content .task-description-rendered {
-  padding: 8px;
-  box-sizing: border-box;
-  min-height: 100px;
+  min-height: 50px;
   overflow-wrap: break-word;
   overflow-y: auto;
   resize: vertical;
   width: 100%;
-}
-
-.task-details-popup-content .task-description-rendered:focus {
-  outline: none;
-  border: 1px solid var(--input-focus-border) !important;
+  /* Border/Focus handled by general rules */
 }
 
 .task-details-popup-content .task-description-rendered p {
   margin-bottom: 0.5em;
 }
-
 .task-details-popup-content .task-description-rendered h1,
 .task-details-popup-content .task-description-rendered h2,
 .task-details-popup-content .task-description-rendered h3,
@@ -1287,54 +1279,46 @@ body.dark-theme .date-picker-day.selected {
   margin-bottom: 0.5em;
   font-weight: bold;
 }
-
 .task-details-popup-content .task-description-rendered ul,
 .task-details-popup-content .task-description-rendered ol {
   padding-left: 1.5em;
   margin-bottom: 0.5em;
 }
-
 .task-details-popup-content .task-description-rendered li {
   margin-bottom: 0.25em;
 }
-
 .task-details-popup-content .task-description-rendered code {
   font-family: monospace, monospace;
   padding: 0.2em 0.4em;
   background-color: var(--inbox-bg-light);
+  border-radius: 0;
 }
-
 body.dark-theme .task-details-popup-content .task-description-rendered code {
   background-color: var(--inbox-bg-dark);
 }
-
 .task-details-popup-content .task-description-rendered pre code {
   display: block;
   padding: 0.5em;
   overflow-x: auto;
 }
-
 .task-details-popup-content .task-description-rendered blockquote {
   margin: 1em 0;
   padding-left: 1em;
   border-left: 0.25em solid var(--dim-text-color);
   color: var(--dim-text-color);
 }
-
-/* Link Styles within Markdown Rendered Description */
 .task-details-popup-content .task-description-rendered a {
   color: var(--link-color-light);
   text-decoration: none;
 }
-
 body.dark-theme .task-details-popup-content .task-description-rendered a {
   color: var(--link-color-dark);
 }
-
 .task-details-popup-content .task-description-rendered a:hover {
   text-decoration: underline;
 }
 
+/* --- Drag & Drop Indicator --- */
 .drop-indicator {
   position: absolute;
   left: 0;
@@ -1347,16 +1331,15 @@ body.dark-theme .task-details-popup-content .task-description-rendered a {
   transform: translateY(-50%);
 }
 
+/* Description Mode Toggle Button */
 .description-mode-button {
-  background: none;
-  border: none;
-  cursor: pointer;
   padding: 0;
   margin-left: 5px;
   opacity: 0.8;
   transition:
     opacity 0.2s ease-in-out,
     color 0.2s ease-in-out;
+  /* Inherits basic button styles */
 }
 
 .description-mode-button:hover,
@@ -1366,7 +1349,7 @@ body.dark-theme .task-details-popup-content .task-description-rendered a {
 }
 
 .description-mode-button i {
-  font-size: 1.2em;
+  font-size: 1.1em; /* Slightly smaller */
   color: var(--dim-text-color);
 }
 
@@ -1374,38 +1357,7 @@ body.dark-theme .task-details-popup-content .task-description-rendered a {
   color: var(--highlight-text-color);
 }
 
-.task-actions-group {
-  display: flex;
-  align-items: center;
-}
-
-.task-details-popup .recurring-button,
-.task-details-popup .reminder-button {
-  background-color: transparent;
-  color: var(--task-popup-icons-color);
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font-size: 1em;
-  opacity: 1 !important;
-  margin-right: 0;
-  white-space: nowrap;
-  transition:
-    background-color 0.2s ease-in-out,
-    color 0.2s ease-in-out;
-}
-
-.task-details-popup .recurring-button:hover,
-.task-details-popup .reminder-button:hover {
-  color: var(--highlight-text-color);
-}
-
-.task-details-popup .recurring-button i,
-.task-details-popup .reminder-button i {
-  color: inherit !important;
-  margin-right: 0;
-}
-
+/* Data Import/Export Buttons */
 .settings-button.data-button {
   justify-content: left;
   width: 100%;
@@ -1425,21 +1377,19 @@ body.dark-theme .task-details-popup-content .task-description-rendered a {
   padding: 8px 12px;
   border: 1px solid var(--task-border-color);
   justify-content: center;
+  border-radius: 0;
 }
 
 .import-db-label:hover,
 .settings-button.data-button:hover {
   background-color: var(--inbox-bg-light);
 }
-
-body.dark-theme .import-db-label:hover {
-  background-color: var(--inbox-bg-dark);
-}
-
+body.dark-theme .import-db-label:hover,
 body.dark-theme .settings-button.data-button:hover {
   background-color: var(--inbox-bg-dark);
 }
 
+/* Spinning Icon for Link Copy */
 @keyframes spin {
   from {
     transform: rotate(360deg);
@@ -1448,30 +1398,229 @@ body.dark-theme .settings-button.data-button:hover {
     transform: rotate(0deg);
   }
 }
-
 .link-button.spinning i {
   animation: spin 1s linear infinite;
 }
 
-.task-recurring-checkbox label.styled-checkbox {
-  font-size: 0.9em;
-  margin-bottom: 10px;
-}
-
-#recurrence-rule-container {
+/* --- Recurrence Controls --- */
+#recurrence-settings-container {
   margin-bottom: 15px;
 }
+.recurrence-row {
+  display: flex;
+  align-items: baseline;
+  /* gap: 15px; /* Adjust gap if needed */
+  flex-wrap: wrap;
+  margin-bottom: 5px;
+}
 
-#recurrence-rule-container label {
-  display: block;
-  margin-bottom: 8px;
+/* Group containing "Repeat every", interval input, and period select */
+.recurrence-control-group {
+  display: flex; /* Keep this flex */
+  align-items: baseline;
+  gap: 8px; /* Space between label, input, select */
+}
+
+/* Label for the group ("Repeat every") */
+.recurrence-control-group label {
+  margin-bottom: 0;
   font-weight: bold;
+  white-space: nowrap;
 }
 
-#recurrence-rule-container select {
-  width: 100%;
+.recurrence-preview-text {
+  font-size: 0.9em;
+  color: var(--dim-text-color);
+  margin-top: 5px; /* Keep consistent margin */
+  min-height: 1.2em; /* Ensure space even when empty */
 }
 
+/* Themed Recurrence Controls */
+.themed-select,
+.themed-input {
+  /* Border/Theme inherited from general rule */
+  padding: 6px 8px;
+  box-sizing: border-box;
+  border-radius: 0;
+  font-size: 0.9em;
+}
+.themed-select {
+  /* Period Select */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='rgba(136, 136, 136, 1)'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 10px 10px;
+  padding-right: 25px;
+  cursor: pointer;
+  min-width: 90px; /* Adjust width as needed */
+}
+.themed-select option {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+.themed-input[type="number"] {
+  /* Interval Input */
+  width: 60px; /* Adjust width as needed */
+  text-align: right;
+}
+.themed-input[type="number"]::-webkit-inner-spin-button,
+.themed-input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.themed-input[type="number"] {
+  -moz-appearance: textfield; /* Firefox */
+}
+
+/* Focus handled by general rule */
+
+/* Active State for Recurring Button */
 .recurring-button.active {
-  color: var(--highlight-text-color); /* Example: Highlight color when active */
+  color: var(--highlight-text-color);
+}
+
+/* --- Task Highlighting --- */
+.event.highlighted-task {
+  outline: 2px solid var(--highlight-text-color);
+  outline-offset: -1px;
+  transition: outline 0.3s ease-out;
+}
+body.dark-theme .event.highlighted-task {
+  outline-color: var(--highlight-text-color);
+}
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 768px) {
+  body {
+    height: auto;
+    overflow: visible;
+  }
+  .calendar-container {
+    height: auto;
+  }
+  .calendar {
+    flex-direction: column;
+    overflow-y: visible;
+  }
+  .calendar-row {
+    flex-direction: column;
+    height: auto;
+  }
+  .day,
+  .inbox {
+    width: 100%;
+    margin-bottom: 10px;
+    overflow-y: visible;
+    max-height: none;
+  }
+  .settings-popup {
+    top: 50px;
+    right: 10px;
+    width: 90%;
+    max-width: 500px;
+  }
+  .settings-columns-container {
+    flex-direction: column;
+    gap: 0;
+  }
+  .settings-column {
+    margin-bottom: 20px;
+  }
+  .task-details-popup-overlay {
+    padding-top: 60px;
+    align-items: flex-start;
+  }
+  .task-details-popup {
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+  }
+  .recurrence-row {
+    gap: 10px;
+  }
+}
+
+/* --- Snackbar --- */
+.snackbar {
+  visibility: hidden;
+  min-width: 250px;
+  margin-left: -125px;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 0; /* Keep sharp corners */
+  padding: 16px;
+  position: fixed;
+  z-index: 1500;
+  left: 50%;
+  bottom: 30px;
+  font-size: 17px;
+  opacity: 0;
+  transition:
+    opacity 0.3s,
+    bottom 0.3s,
+    visibility 0s 0.3s; /* Delay visibility change until fade out */
+  box-shadow:
+    0 3px 6px rgba(0, 0, 0, 0.16),
+    0 3px 6px rgba(0, 0, 0, 0.23); /* Optional shadow */
+  overflow: hidden; /* Hide overflowing progress bar */
+}
+.snackbar.show {
+  visibility: visible;
+  opacity: 1;
+  bottom: 50px;
+  min-height: 20px; /* Ensure minimum height even without button */
+  transition:
+    opacity 0.3s,
+    bottom 0.3s,
+    visibility 0s; /* Remove delay for showing */
+}
+
+/* Snackbar Content Alignment (Optional, for button) */
+.snackbar-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Space between text and button */
+  gap: 15px; /* Space between text and button */
+  min-height: 20px; /* Match snackbar min-height */
+}
+
+.snackbar-text {
+  flex-grow: 1; /* Allow text to take available space */
+  text-align: left; /* Align text left when button is present */
+}
+
+.snackbar-button {
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 0.9em;
+  border-radius: 0; /* Match snackbar */
+  white-space: nowrap;
+  flex-shrink: 0; /* Prevent button from shrinking */
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
+}
+.snackbar-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: white;
+}
+.snackbar-button:active {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Snackbar Progress Bar */
+.snackbar-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 4px; /* Height of the progress bar */
+  width: 100%; /* Start at full width, JS controls animation */
+  background-color: rgba(255, 255, 255, 0.5); /* Progress bar color */
 }
