@@ -77,7 +77,6 @@ let scrollEventListener = null;
 
 // State for Undo Operations
 export let lastDeletedTaskData = null; // Used in tasks.js to filter render temporarily
-// !! REMOVED: lastDeletedTaskElement, lastDeletedTaskParent, lastDeletedTaskNextSibling - we re-render instead
 let deleteTimeoutId = null; // ID for the setTimeout confirming deletion
 let lastClearedRecurrence = null; // { taskId: number, rule: string, interval: number }
 let recurrenceTimeoutId = null; // ID for the setTimeout confirming recurrence removal
@@ -509,7 +508,6 @@ export async function openTaskDetails(taskId) {
   // Reset undo state before opening new details
   lastDeletedTaskData = null;
   deleteTimeoutId = null;
-  // lastDeletedTaskElement = null; // No longer needed
   lastClearedRecurrence = null;
   recurrenceTimeoutId = null;
   recurrenceOpenedForNonRecurring = false;
@@ -721,19 +719,96 @@ async function handleColorSwatchClick(event) {
   }
 }
 
-function handleCopyTaskLinkClick() {
+// Make the function async and implement fallback
+async function handleCopyTaskLinkClick() {
   if (!currentTaskBeingViewed) return;
   const taskLink = `${window.location.origin}/#task/${currentTaskBeingViewed}`;
-  navigator.clipboard
-    .writeText(taskLink)
-    .then(() => {
-      showSnackbar("taskLinkCopied");
-      if (copyTaskLinkBtn) {
-        copyTaskLinkBtn.classList.add("spinning");
-        setTimeout(() => copyTaskLinkBtn.classList.remove("spinning"), 1000);
+  let success = false;
+
+  // Try modern Clipboard API first (preferred)
+  // Check for navigator object, clipboard property, and secure context
+  // The check window.isSecureContext implicitly handles the unsecured connection case.
+  if (
+    typeof navigator !== "undefined" &&
+    navigator.clipboard &&
+    window.isSecureContext
+  ) {
+    console.log("Using Clipboard API for copy.");
+    try {
+      await navigator.clipboard.writeText(taskLink);
+      success = true;
+    } catch (err) {
+      console.error("Clipboard API failed:", err);
+    }
+  } else {
+    if (typeof navigator === "undefined") {
+      console.warn("Navigator object is undefined. Skipping Clipboard API.");
+    } else if (!navigator.clipboard) {
+      console.warn(
+        "navigator.clipboard API is not available. Skipping Clipboard API.",
+      );
+    } else if (!window.isSecureContext) {
+      console.warn("Context is not secure (HTTP). Skipping Clipboard API.");
+    }
+  }
+
+  // Fallback using document.execCommand if Clipboard API was unavailable or failed
+  if (!success) {
+    console.warn(
+      "Clipboard API unavailable or failed. Using fallback copy method.",
+    );
+    const textArea = document.createElement("textarea");
+    textArea.value = taskLink;
+    // Style to be invisible and prevent scrolling issues
+    textArea.style.position = "fixed";
+    textArea.style.top = "0";
+    textArea.style.left = "-9999px";
+    textArea.style.opacity = "0"; // Make visually hidden
+    textArea.setAttribute("readonly", ""); // Prevent keyboard popup on mobile
+
+    document.body.appendChild(textArea);
+    textArea.select(); // Select the text node's content
+    textArea.setSelectionRange(0, textArea.value.length); // Ensure selection works on mobile
+
+    try {
+      // Use execCommand
+      success = document.execCommand("copy");
+      if (!success) {
+        console.error("Fallback execCommand('copy') failed.");
       }
-    })
-    .catch((err) => showSnackbar("taskLinkCopyFailed", true));
+    } catch (err) {
+      console.error("Error during fallback execCommand('copy'):", err);
+      success = false; // Ensure success is false on error
+    }
+
+    document.body.removeChild(textArea); // Clean up the temporary element
+
+    // Deselect text after copy (good practice)
+    if (window.getSelection) {
+      window.getSelection().removeAllRanges();
+    } else if (document.selection) {
+      // Older IE
+      document.selection.empty();
+    }
+  }
+
+  // Show feedback based on success
+  if (success) {
+    showSnackbar("taskLinkCopied");
+    // Keep the spinning animation feedback
+    if (copyTaskLinkBtn) {
+      copyTaskLinkBtn.classList.add("spinning");
+      setTimeout(() => {
+        if (copyTaskLinkBtn) {
+          // Check if button still exists
+          copyTaskLinkBtn.classList.remove("spinning");
+        }
+      }, 1000);
+    }
+  } else {
+    // Use translation key for failure message
+    showSnackbar("taskLinkCopyFailed", true);
+  }
 }
 
 // Closes the task details popup and resets associated state.

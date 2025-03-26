@@ -35,12 +35,14 @@ export async function fetchInboxTitle() {
   try {
     const response = await fetch(`${API_BASE}/inbox_title`);
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(
+        `HTTP error! status: ${response.status} fetching inbox title.`,
+      );
     }
     const data = await response.json();
     return data.inbox_title || "📦 Inbox";
   } catch (error) {
-    console.error("Could not fetch inbox title:", error);
+    console.error("Could not fetch inbox title, using default:", error);
     return "📦 Inbox";
   }
 }
