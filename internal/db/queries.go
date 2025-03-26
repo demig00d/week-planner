@@ -52,18 +52,32 @@ func GetTasks(date string, startDate string, endDate string) (Tasks, error) {
 // GetInboxTitle returns the current inbox title from settings.
 func GetInboxTitle() (string, error) {
 	type Setting struct {
+		Key   string `gorm:"primaryKey"`
 		Value string
 	}
 	var setting Setting
-	// Use FirstOrCreate to handle the case where the setting doesn't exist yet.
-	result := GetDB().Model(&Setting{}).
-		Where("key = ?", "inbox_title").
-		FirstOrCreate(&setting, Setting{Value: "📦 Inbox"}) // Provide default value.
 
-	if result.Error != nil {
-		return "", fmt.Errorf("getInboxTitle: %w", result.Error)
+	// 1. Try to find the setting first.
+	err := GetDB().Model(&Setting{}).Where("key = ?", "inbox_title").First(&setting).Error
+
+	// 2. Check the error type.
+	if err == nil {
+		// Found the setting, return its value.
+		return setting.Value, nil
+	} else if err == gorm.ErrRecordNotFound {
+		// Setting not found, create it with the default value.
+		slog.Info("Inbox title setting not found, creating default.")
+		setting = Setting{Key: "inbox_title", Value: "📦 Inbox"}
+		if createErr := GetDB().Create(&setting).Error; createErr != nil {
+			// Failed to create the default setting.
+			return "", fmt.Errorf("getInboxTitle: failed to create default setting: %w", createErr)
+		}
+		// Successfully created, return the default value.
+		return setting.Value, nil
+	} else {
+		// Some other database error occurred during the find operation.
+		return "", fmt.Errorf("getInboxTitle: error fetching setting: %w", err)
 	}
-	return setting.Value, nil
 }
 
 // UpdateInboxTitle updates the inbox title setting.
